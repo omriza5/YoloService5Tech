@@ -211,6 +211,13 @@ def get_prediction_image(uid: str, request: Request):
         # If the client doesn't accept image, respond with 406 Not Acceptable
         raise HTTPException(status_code=406, detail="Client does not accept an image format")
 
+@app.get("/health")
+def health():
+    """
+    Health check endpoint
+    """
+    return {"status": "ok"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8080)
