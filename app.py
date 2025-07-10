@@ -172,7 +172,7 @@ def delete_prediction(uid: str):
             # Get image paths before deleting from DB
             row = conn.execute("SELECT original_image, predicted_image FROM prediction_sessions WHERE uid = ?", (uid,)).fetchone()
             if not row:
-                raise Exception("Prediction not found")
+                raise HTTPException(status_code=404, detail="Prediction not found")
             original_image, predicted_image = row
 
             # Delete from DB
@@ -185,8 +185,10 @@ def delete_prediction(uid: str):
                 os.remove(path)
 
         return {"detail": "Prediction and images deleted"}
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to delete prediction.")
+    except Exception as e:
+        status_code = getattr(e, "status_code", 500)
+        detail = getattr(e, "detail", "Failed to delete prediction.")
+        raise HTTPException(status_code=status_code, detail=detail)
 
 @app.get("/labels")
 def get_labels():
