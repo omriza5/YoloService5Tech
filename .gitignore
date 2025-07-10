@@ -12,3 +12,5 @@
 
 uploads/
 images/
+__pycache__/
+tests/__pycache__/

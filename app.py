@@ -116,6 +116,17 @@ def predict(file: UploadFile = File(...)):
         "time_took": processing_time
     }
 
+@app.get("/prediction/count")
+def prediction_count():
+    """
+    Get the total count of prediction sessions
+    """
+    with sqlite3.connect(DB_PATH) as conn:
+        count = conn.execute("SELECT COUNT(*) FROM prediction_sessions WHERE timestamp >= datetime('now', '-7 days')").fetchone()[0]
+    return {
+        "prediction_count": count
+    }
+    
 @app.get("/prediction/{uid}")
 def get_prediction_by_uid(uid: str):
     """
@@ -225,4 +236,4 @@ def health():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    uvicorn.run("app:app", host="0.0.0.0", port=8080,reload=True)
