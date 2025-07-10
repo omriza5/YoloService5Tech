@@ -81,40 +81,42 @@ def predict(file: UploadFile = File(...)):
     """
     Predict objects in an image
     """
-    start_time = time.time()
-    ext = os.path.splitext(file.filename)[1]
-    uid = str(uuid.uuid4())
-    original_path = os.path.join(UPLOAD_DIR, uid + ext)
-    predicted_path = os.path.join(PREDICTED_DIR, uid + ext)
+    try:
+        start_time = time.time()
+        ext = os.path.splitext(file.filename)[1]
+        uid = str(uuid.uuid4())
+        original_path = os.path.join(UPLOAD_DIR, uid + ext)
+        predicted_path = os.path.join(PREDICTED_DIR, uid + ext)
 
-    with open(original_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+        with open(original_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
 
-    results = model(original_path, device="cpu")
+        results = model(original_path, device="cpu")
+        annotated_frame = results[0].plot()  # NumPy image with boxes
+        annotated_image = Image.fromarray(annotated_frame)
+        annotated_image.save(predicted_path)
 
-    annotated_frame = results[0].plot()  # NumPy image with boxes
-    annotated_image = Image.fromarray(annotated_frame)
-    annotated_image.save(predicted_path)
+        save_prediction_session(uid, original_path, predicted_path)
+        
+        detected_labels = []
+        for box in results[0].boxes:
+            label_idx = int(box.cls[0].item())
+            label = model.names[label_idx]
+            score = float(box.conf[0])
+            bbox = box.xyxy[0].tolist()
+            save_detection_object(uid, label, score, bbox)
+            detected_labels.append(label)
 
-    save_prediction_session(uid, original_path, predicted_path)
-    
-    detected_labels = []
-    for box in results[0].boxes:
-        label_idx = int(box.cls[0].item())
-        label = model.names[label_idx]
-        score = float(box.conf[0])
-        bbox = box.xyxy[0].tolist()
-        save_detection_object(uid, label, score, bbox)
-        detected_labels.append(label)
-
-    processing_time = round(time.time() - start_time, 2)
-    
-    return {
-        "prediction_uid": uid, 
-        "detection_count": len(results[0].boxes),
-        "labels": detected_labels,
-        "time_took": processing_time
-    }
+        processing_time = round(time.time() - start_time, 2)
+        
+        return {
+            "prediction_uid": uid, 
+            "detection_count": len(results[0].boxes),
+            "labels": detected_labels,
+            "time_took": processing_time
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
 @app.get("/prediction/count")
 def prediction_count():
@@ -160,6 +162,22 @@ def get_prediction_by_uid(uid: str):
             ]
         }
 
+@app.get("/labels")
+def get_labels():
+    """
+    Get all distinct labels detected in the last N days (default 7)
+    """
+    days = 7
+    with sqlite3.connect(DB_PATH) as conn:
+        query = f"""
+            SELECT DISTINCT do.label
+            FROM detection_objects do
+            JOIN prediction_sessions ps ON do.prediction_uid = ps.uid
+            WHERE ps.timestamp >= datetime('now', '-{days} days')
+        """
+        rows = conn.execute(query).fetchall()
+        return {"labels": [row[0] for row in rows]}
+        
 @app.get("/predictions/label/{label}")
 def get_predictions_by_label(label: str):
     """
