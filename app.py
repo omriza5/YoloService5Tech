@@ -172,7 +172,7 @@ def delete_prediction(uid: str):
             # Get image paths before deleting from DB
             row = conn.execute("SELECT original_image, predicted_image FROM prediction_sessions WHERE uid = ?", (uid,)).fetchone()
             if not row:
-                raise HTTPException(status_code=404, detail="Prediction not found")
+                raise HTTPException(status_code=400, detail="Prediction not found")
             original_image, predicted_image = row
 
             # Delete from DB
