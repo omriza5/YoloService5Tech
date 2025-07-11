@@ -162,6 +162,34 @@ def get_prediction_by_uid(uid: str):
             ]
         }
 
+@app.delete("/prediction/{uid}")
+def delete_prediction(uid: str):
+    """
+    Delete prediction session by uid
+    """
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            # Get image paths before deleting from DB
+            row = conn.execute("SELECT original_image, predicted_image FROM prediction_sessions WHERE uid = ?", (uid,)).fetchone()
+            if not row:
+                raise HTTPException(status_code=400, detail="Prediction not found")
+            original_image, predicted_image = row
+
+            # Delete from DB
+            conn.execute("DELETE FROM prediction_sessions WHERE uid = ?", (uid,))
+            conn.execute("DELETE FROM detection_objects WHERE prediction_uid = ?", (uid,))
+
+        # Delete image files if they exist
+        for path in [original_image, predicted_image]:
+            if path and os.path.exists(path):
+                os.remove(path)
+
+        return {"detail": "Prediction and images deleted"}
+    except Exception as e:
+        status_code = getattr(e, "status_code", 500)
+        detail = getattr(e, "detail", "Failed to delete prediction.")
+        raise HTTPException(status_code=status_code, detail=detail)
+
 @app.get("/labels")
 def get_labels():
     """
