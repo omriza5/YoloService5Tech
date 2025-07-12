@@ -205,7 +205,52 @@ def get_labels():
         """
         rows = conn.execute(query).fetchall()
         return {"labels": [row[0] for row in rows]}
-        
+
+@app.get("/labels")
+@app.get("/stats")
+def get_stats():
+    """
+    Get statistics about predictions in the last N days (default 7)
+    """
+    days = 7
+    with sqlite3.connect(DB_PATH) as conn:
+        # 1. Total number of predictions made in the last N days
+        total_predictions = conn.execute(
+            f"""SELECT COUNT(*) 
+              FROM prediction_sessions 
+              WHERE timestamp >= datetime('now', '-{days} days')"""
+        ).fetchone()[0]
+
+        # 2. Average confidence scores in the last N days
+        avg_score = conn.execute(
+            f"""
+            SELECT ROUND(AVG(score), 2)
+            FROM detection_objects do JOIN prediction_sessions ps ON do.prediction_uid = ps.uid
+            WHERE ps.timestamp >= datetime('now', '-{days} days')
+            """
+        ).fetchone()[0]
+        avg_score = round(avg_score, 4) if avg_score is not None else 0.0
+
+        # 3. Most frequently detected object labels in the last N days
+        rows = conn.execute(
+            f"""
+            SELECT do.label, COUNT(*) as count
+            FROM detection_objects do
+            JOIN prediction_sessions ps ON do.prediction_uid = ps.uid
+            WHERE ps.timestamp >= datetime('now', '-{days} days')
+            GROUP BY do.label
+            ORDER BY count DESC
+            LIMIT 5
+            """
+        ).fetchall()
+        most_common_labels = {row[0]: row[1] for row in rows}
+
+        return {
+            "total_predictions": total_predictions,
+            "average_confidence_score": avg_score,
+            "most_common_labels": most_common_labels
+        }
+    
 @app.get("/predictions/label/{label}")
 def get_predictions_by_label(label: str):
     """
