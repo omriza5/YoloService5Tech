@@ -17,8 +17,8 @@ class TestStatsEndpoint(unittest.TestCase):
         response = self.client.get("/stats")
         
         # Assert
-        data = response.json()
         self.assertEqual(response.status_code, 200)
+        data = response.json()
         self.assertEqual(data["total_predictions"], 0)
         self.assertEqual(data["average_confidence_score"], 0.0)
         self.assertEqual(data["most_common_labels"], {})
@@ -32,11 +32,11 @@ class TestStatsEndpoint(unittest.TestCase):
         )
 
         # Act
-        response = self.client.get("/stats")
-        data = response.json()
+        response = self.client.get("/statss")
         
         # Assert
         self.assertEqual(response.status_code, 200)
+        data = response.json()
         self.assertEqual(data["total_predictions"], 1)
         self.assertIsInstance(data["average_confidence_score"], float)
         self.assertIsInstance(data["most_common_labels"], dict)
@@ -53,10 +53,10 @@ class TestStatsEndpoint(unittest.TestCase):
         
         # Act
         response = self.client.get("/stats")
-        data = response.json()
+        self.assertEqual(response.status_code, 200)
         
         # Assert
-        self.assertEqual(response.status_code, 200)
+        data = response.json()
         self.assertEqual(data["total_predictions"], 3)
         self.assertIsInstance(data["average_confidence_score"], float)
         self.assertIsInstance(data["most_common_labels"], dict)
@@ -79,9 +79,9 @@ class TestStatsEndpoint(unittest.TestCase):
         
         # Act
         response = self.client.get("/stats")
-        data = response.json()
         
         # Assert
         self.assertEqual(response.status_code, 200)
+        data = response.json()
         self.assertIn(2, data["most_common_labels"].values())
 
