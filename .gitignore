@@ -9,7 +9,7 @@
 
 *.db
 *.pt
-
+*.pem
 uploads/
 images/
 __pycache__/
