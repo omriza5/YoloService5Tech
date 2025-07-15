@@ -55,4 +55,4 @@ jobs:
             else
               sudo systemctl start yolo
             fi
-            sudo systemctl status yoloservice --no-pager
+            sudo systemctl status yolo --no-pager
