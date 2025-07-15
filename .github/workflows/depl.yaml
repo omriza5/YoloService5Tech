@@ -1,0 +1,58 @@
+name: Deploy Service
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ubuntu
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /home/ubuntu/YoloService5Tech || (git clone https://github.com/omriza5/YoloService5Tech.git && cd YoloService5Tech)
+
+            # Ensure the latest code is pulled
+            git pull
+
+            # Ensure Python 3 and venv are installed
+            sudo apt-get update
+            sudo apt-get install -y python3 python3-venv python3-pip
+
+            # Set up virtual environment
+            if [ ! -d "venv" ]; then
+              python3 -m venv venv
+            fi
+            source venv/bin/activate
+
+            # Install torch requirements if present
+            if [ -f torch-requirements.txt ]; then
+              pip install -r torch-requirements.txt
+            fi
+
+            # Install dependencies
+            pip install --upgrade pip
+            if [ -f requirements.txt ]; then
+              pip install -r requirements.txt
+            fi
+
+            # Restart the systemd service
+            sudo systemctl daemon-reload
+            sudo systemctl enable yolo
+            if systemctl is-active --quiet yolo; then
+              sudo systemctl restart yolo
+            else
+              sudo systemctl start yolo
+            fi
+            sudo systemctl status yoloservice --no-pager
