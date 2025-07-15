@@ -32,7 +32,7 @@ class TestStatsEndpoint(unittest.TestCase):
         )
 
         # Act
-        response = self.client.get("/statss")
+        response = self.client.get("/stats")
         
         # Assert
         self.assertEqual(response.status_code, 200)
