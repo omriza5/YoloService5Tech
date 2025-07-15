@@ -27,13 +27,27 @@ model = YOLO("yolov8n.pt")
 # Initialize SQLite
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
-        # Create the predictions main table to store the prediction session
+        # Create the users table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                email TEXT UNIQUE,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT 1
+            )
+        """)
+        
+        # Add user_id to prediction_sessions
         conn.execute("""
             CREATE TABLE IF NOT EXISTS prediction_sessions (
                 uid TEXT PRIMARY KEY,
+                user_id INTEGER,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
                 original_image TEXT,
-                predicted_image TEXT
+                predicted_image TEXT,
+                FOREIGN KEY(user_id) REFERENCES users(id)
             )
         """)
         
@@ -62,9 +76,9 @@ def save_prediction_session(uid, original_image, predicted_image):
     """
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute("""
-            INSERT INTO prediction_sessions (uid, original_image, predicted_image)
-            VALUES (?, ?, ?)
-        """, (uid, original_image, predicted_image))
+            INSERT INTO prediction_sessions (uid, original_image, predicted_image,user_id)
+            VALUES (?, ?, ?, ?)
+        """, (uid, original_image, predicted_image, None))  
 
 def save_detection_object(prediction_uid, label, score, box):
     """
