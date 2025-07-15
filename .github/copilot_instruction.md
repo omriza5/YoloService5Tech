@@ -1,0 +1,1 @@
+- If your suggestion references external resources or documentation, provide relevant external links.
