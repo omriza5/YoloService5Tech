@@ -1,9 +1,9 @@
 import unittest
 from fastapi.testclient import TestClient
-from PIL import Image
 import io
 from app import app, DB_PATH, init_db
 import os
+from .services.auth import get_basic_auth_header
 
 class TestLabelsEndpoint(unittest.TestCase):
     def setUp(self):
@@ -12,9 +12,14 @@ class TestLabelsEndpoint(unittest.TestCase):
             os.remove(DB_PATH)
             
         init_db()
+        
+        self.username = "testuser"
+        self.password = "testpass"
+        self.client.post("/users", json={"username": self.username, "password": self.password})
     
     def test_labels_endpoint_no_predictions(self):
-        response = self.client.get("/labels")
+        headers = get_basic_auth_header(self.username, self.password)
+        response = self.client.get("/labels", headers=headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data["labels"], [])
@@ -23,6 +28,7 @@ class TestLabelsEndpoint(unittest.TestCase):
         """
         Test that uploading an invalid (non-image) file to /predict returns an error and does not add any labels.
         """
+        headers = get_basic_auth_header(self.username, self.password)
         response = self.client.post(
             "/predict",
             files={"file": ("not_an_image.txt", io.BytesIO(b"not an image"), "text/plain")}
@@ -33,7 +39,7 @@ class TestLabelsEndpoint(unittest.TestCase):
         self.assertIn("Prediction failed", data.get("detail", ""))
 
         # Ensure /labels is still empty
-        response = self.client.get("/labels")
+        response = self.client.get("/labels",headers=headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data["labels"], [])       
@@ -48,8 +54,9 @@ class TestLabelsEndpoint(unittest.TestCase):
         """
         # Arrange test
         self.upload_test_image("tests/assets/cat.jpg")
-        
-        response = self.client.get("/labels")
+        headers = get_basic_auth_header(self.username, self.password)
+
+        response = self.client.get("/labels", headers=headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         
@@ -67,8 +74,9 @@ class TestLabelsEndpoint(unittest.TestCase):
         """
         self.upload_test_image("tests/assets/cat.jpg")
         self.upload_test_image("tests/assets/bear.jpg")
-        
-        response = self.client.get("/labels")
+        headers = get_basic_auth_header(self.username, self.password)
+
+        response = self.client.get("/labels", headers=headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         labels = data.get("labels", [])
@@ -88,7 +96,9 @@ class TestLabelsEndpoint(unittest.TestCase):
         self.upload_test_image("tests/assets/cat.jpg")
         self.upload_test_image("tests/assets/cat.jpg")
         
-        response = self.client.get("/labels")
+        headers = get_basic_auth_header(self.username, self.password)
+        
+        response = self.client.get("/labels", headers=headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         labels = data.get("labels", [])
@@ -101,3 +111,19 @@ class TestLabelsEndpoint(unittest.TestCase):
                 files={"file": ("test_object.jpg", img_file, "image/jpeg")}
             )
         return response 
+
+    def test_labels_endpoint_unauthorized_no_credentials(self):
+        """
+        Test that accessing /labels without credentials returns 401 Unauthorized.
+        """
+        response = self.client.get("/labels")
+        self.assertEqual(response.status_code, 401)
+
+    def test_labels_endpoint_unauthorized_invalid_credentials(self):
+        """
+        Test that accessing /labels with invalid credentials returns 401 Unauthorized.
+        """
+        headers = get_basic_auth_header("wronguser", "wrongpass")
+        response = self.client.get("/labels", headers=headers)
+        self.assertEqual(response.status_code, 401)
+        

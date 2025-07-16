@@ -11,3 +11,9 @@ python-multipart>=0.0.6
 
 # HTTPX for asynchronous HTTP requests
 httpx>=0.24.0
+
+bcrypt
+
+pytest==7.4.0
+pytest-cov==4.1.0
+pytest-html==3.2.0
