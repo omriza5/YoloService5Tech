@@ -1,6 +1,5 @@
 import unittest
 import os
-import sqlite3
 from fastapi.testclient import TestClient
 from app import app, DB_PATH, init_db, PREDICTED_DIR, UPLOAD_DIR
 from tests.services.image_utils import create_dummy_image
