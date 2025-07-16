@@ -14,5 +14,5 @@ uploads/
 images/
 __pycache__/
 tests/__pycache__/
-coverage.xml
 .coverage
+
