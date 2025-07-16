@@ -156,6 +156,7 @@ def predict(file: UploadFile = File(...), request: Request = None):
             "detection_count": len(results[0].boxes),
             "labels": detected_labels,
             "time_took": processing_time,
+            "user_id": user_id,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
