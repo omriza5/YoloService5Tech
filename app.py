@@ -1,4 +1,5 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request,Body
+import bcrypt
 from fastapi.responses import FileResponse, Response
 from ultralytics import YOLO
 from PIL import Image
@@ -32,10 +33,8 @@ def init_db():
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
-                password_hash TEXT NOT NULL,
-                email TEXT UNIQUE,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                is_active BOOLEAN DEFAULT 1
+                password TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
         
@@ -332,6 +331,27 @@ def get_prediction_image(uid: str, request: Request):
         # If the client doesn't accept image, respond with 406 Not Acceptable
         raise HTTPException(status_code=406, detail="Client does not accept an image format")
 
+@app.post("/users")
+def create_user(
+    username: str = Body(...),
+    password: str = Body(...),
+):
+    """
+    Create a new user with hashed password
+    """
+    if not username or not password or username.strip() == "" or password.strip() == "":
+        raise HTTPException(status_code=400, detail="Invalid Credentials")
+    hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    username = username.lower().strip()
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute("""
+                INSERT INTO users (username, password)
+                VALUES (?, ?)
+            """, (username, hashed_pw))
+        return {"detail": "User created successfully"}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="Username or email already exists")
 @app.get("/health")
 def health():
     """
