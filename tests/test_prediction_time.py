@@ -31,3 +31,14 @@ class TestProcessingTime(unittest.TestCase):
         self.assertIn("time_took", data)
         self.assertIsInstance(data["time_took"], (int, float))
         self.assertGreater(data["time_took"], 0)
+
+
+    def test_predict_exception_returns_500(self):
+        """Test that predict endpoint returns 500 on exception"""
+        # Send invalid file (not an image)
+        response = self.client.post(
+            "/predict",
+            files={"file": ("test.txt", io.BytesIO(b"not an image"), "text/plain")}
+        )
+        self.assertEqual(response.status_code, 500)
+        self.assertIn("Prediction failed", response.json()["detail"])
