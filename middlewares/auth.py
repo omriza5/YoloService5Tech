@@ -1,4 +1,5 @@
-from fastapi import Request, HTTPException
+from fastapi import Request
+from fastapi.responses import JSONResponse
 from app import app
 import sqlite3
 import base64
@@ -8,7 +9,7 @@ DB_PATH = "predictions.db"
 @app.middleware("http")
 async def basic_auth_middleware(request: Request, call_next):
     # Allow /health without auth
-    if request.url.path == "/health":
+    if request.url.path == "/health" or request.url.path == "/users":
         return await call_next(request)
     
     # Extract Basic Auth from headers
@@ -21,9 +22,9 @@ async def basic_auth_middleware(request: Request, call_next):
     
     if not user_id:
         # If credentials are not provided or invalid, raise HTTPException
-        raise HTTPException(
+         return JSONResponse(
             status_code=401,
-            detail="Unauthorized",
+            content={"detail": "Unauthorized"},
             headers={"WWW-Authenticate": "Basic"},
         )
     
@@ -42,6 +43,9 @@ def get_credentials_from_headers(request: Request):
 
 
 def verify_credentials(username: str, user_password: str):
+    if not username or not user_password:
+        return None
+    username = username.lower().strip() 
     with sqlite3.connect(DB_PATH) as conn:
         row = conn.execute(
             "SELECT id, password FROM users WHERE username = ?",

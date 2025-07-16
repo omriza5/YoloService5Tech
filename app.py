@@ -412,7 +412,7 @@ def create_user(
             )
         return {"detail": "User created successfully"}
     except sqlite3.IntegrityError:
-        raise HTTPException(status_code=400, detail="Username or email already exists")
+        raise HTTPException(status_code=400, detail="Username already exists")
 
 
 @app.get("/health")

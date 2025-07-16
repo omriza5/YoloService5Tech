@@ -39,7 +39,7 @@ class TestUsersEndpoint(unittest.TestCase):
         # Assert
         self.assertEqual(response.status_code, 400)
         data = response.json()
-        self.assertEqual(data["detail"], "Username or email already exists")
+        self.assertEqual(data["detail"], "Username already exists")
         
     def test_create_user_invalid_data(self):
         # Act
