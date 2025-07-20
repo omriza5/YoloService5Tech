@@ -5,6 +5,7 @@ import sqlite3
 import os
 from controllers.health_controller import router as health_router
 from controllers.prediction_controller import router as prediction_router
+from controllers.labels_controller import router as labels_router
 from services.yolo_model import model
 from db.utils import init_db
 
@@ -36,27 +37,10 @@ os.makedirs(PREDICTED_DIR, exist_ok=True)
 # app routes
 app.include_router(health_router)
 app.include_router(prediction_router)
+app.include_router(labels_router)
 
 
 
-@app.get("/labels")
-def get_labels():
-    """
-    Get all distinct labels detected in the last N days (default 7)
-    """
-    days = 7
-    with sqlite3.connect(DB_PATH) as conn:
-        query = f"""
-            SELECT DISTINCT do.label
-            FROM detection_objects do
-            JOIN prediction_sessions ps ON do.prediction_uid = ps.uid
-            WHERE ps.timestamp >= datetime('now', '-{days} days')
-        """
-        rows = conn.execute(query).fetchall()
-        return {"labels": [row[0] for row in rows]}
-
-
-@app.get("/labels")
 @app.get("/stats")
 def get_stats():
     """
