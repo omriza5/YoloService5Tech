@@ -23,8 +23,6 @@ init_db()
 # Import middleware to ensure registration
 import middlewares.auth
 
-
-
 UPLOAD_DIR = "uploads/original"
 PREDICTED_DIR = "uploads/predicted"
 DB_PATH = "predictions.db"
@@ -32,14 +30,10 @@ DB_PATH = "predictions.db"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PREDICTED_DIR, exist_ok=True)
 
-
-
 # app routes
 app.include_router(health_router)
 app.include_router(prediction_router)
 app.include_router(labels_router)
-
-
 
 @app.get("/stats")
 def get_stats():
@@ -85,7 +79,6 @@ def get_stats():
             "most_common_labels": most_common_labels,
         }
 
-
 @app.get("/image/{type}/{filename}")
 def get_image(type: str, filename: str):
     """
@@ -97,35 +90,6 @@ def get_image(type: str, filename: str):
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Image not found")
     return FileResponse(path)
-
-
-@app.get("/prediction/{uid}/image")
-def get_prediction_image(uid: str, request: Request):
-    """
-    Get prediction image by uid
-    """
-    accept = request.headers.get("accept", "")
-    with sqlite3.connect(DB_PATH) as conn:
-        row = conn.execute(
-            "SELECT predicted_image FROM prediction_sessions WHERE uid = ?", (uid,)
-        ).fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="Prediction not found")
-        image_path = row[0]
-
-    if not os.path.exists(image_path):
-        raise HTTPException(status_code=404, detail="Predicted image file not found")
-
-    if "image/png" in accept:
-        return FileResponse(image_path, media_type="image/png")
-    elif "image/jpeg" in accept or "image/jpg" in accept:
-        return FileResponse(image_path, media_type="image/jpeg")
-    else:
-        # If the client doesn't accept image, respond with 406 Not Acceptable
-        raise HTTPException(
-            status_code=406, detail="Client does not accept an image format"
-        )
-
 
 @app.post("/users")
 def create_user(

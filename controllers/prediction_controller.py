@@ -7,6 +7,7 @@ from services.prediction_service import (
     delete_prediction_by_uid,
     get_all_predictions_by_label,
     get_all_predictions_by_score,
+    get_prediction_image_by_uid
 )
 from db.utils import get_db
 
@@ -73,4 +74,19 @@ def get_predictions_by_score(min_score: float, db: Session = Depends(get_db)):
     if not predictions:
         raise HTTPException(status_code=404, detail="No predictions found for this score")
     return predictions
+
+# [ ] - add tests for get_prediction_image
+@router.get("/prediction/{uid}/image")
+def get_prediction_image(uid: str, request: Request,db: Session = Depends(get_db)):
+    """
+    Get prediction image by uid
+    """
+    try:
+        return get_prediction_image_by_uid(uid, request, db)
+    except Exception as e:
+        status_code = getattr(e, "status_code", 500)
+        detail = getattr(e, "detail", "Failed to get prediction image.")
+        raise HTTPException(status_code=status_code, detail=detail)
+
+    
 

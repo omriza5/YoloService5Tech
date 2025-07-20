@@ -9,6 +9,7 @@ from services.yolo_model import model
 from sqlalchemy import func
 from datetime import datetime, timedelta
 from fastapi import HTTPException
+from fastapi.responses import FileResponse
 
 UPLOAD_DIR = "uploads/original"
 PREDICTED_DIR = "uploads/predicted"
@@ -172,3 +173,25 @@ def get_all_predictions_by_score(min_score, db):
         }
         for pred in predictions
     ]
+    
+
+def get_prediction_image_by_uid(uid, request, db):
+    accept = request.headers.get("accept", "")
+    prediction = db.query(PredictionSession).filter(PredictionSession.uid == uid).first()
+    if not prediction:
+        raise HTTPException(status_code=404, detail="Prediction not found")
+    image_path = prediction.predicted_image
+
+    if not os.path.exists(image_path):
+        raise HTTPException(status_code=404, detail="Predicted image file not found")
+
+    if "image/png" in accept:
+        return FileResponse(image_path, media_type="image/png")
+    elif "image/jpeg" in accept or "image/jpg" in accept:
+        return FileResponse(image_path, media_type="image/jpeg")
+    else:
+        # If the client doesn't accept image, respond with 406 Not Acceptable
+        raise HTTPException(
+            status_code=406, detail="Client does not accept an image format"
+        )
+        
