@@ -83,3 +83,29 @@ def get_predictions_count(db):
     count = db.query(func.count(PredictionSession.uid)).filter(PredictionSession.timestamp >= seven_days_ago).scalar()
     return {"prediction_count": count}
 
+def prediction_by_uid(uid, db):
+    """
+    Get prediction session by uid with all detected objects
+    """
+    prediction = db.query(PredictionSession).filter(PredictionSession.uid == uid).first()
+    if not prediction:
+        return None
+        
+    objects = db.query(DetectionObject).filter(DetectionObject.prediction_uid == uid).all()
+
+    return {
+        "uid": prediction.uid,
+        "timestamp": prediction.timestamp,
+        "original_image": prediction.original_image,
+        "predicted_image": prediction.predicted_image,
+        "detection_objects": [
+            {
+                "id": obj.id,
+                "label": obj.label,
+                "score": obj.score,
+                "box": obj.box,
+            }
+            for obj in objects
+        ],
+    }
+

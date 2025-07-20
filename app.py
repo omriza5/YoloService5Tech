@@ -37,43 +37,6 @@ os.makedirs(PREDICTED_DIR, exist_ok=True)
 app.include_router(health_router)
 app.include_router(prediction_router)
 
-
-@app.get("/prediction/{uid}")
-def get_prediction_by_uid(uid: str):
-    """
-    Get prediction session by uid with all detected objects
-    """
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-        # Get prediction session
-        session = conn.execute(
-            "SELECT * FROM prediction_sessions WHERE uid = ?", (uid,)
-        ).fetchone()
-        if not session:
-            raise HTTPException(status_code=404, detail="Prediction not found")
-
-        # Get all detection objects for this prediction
-        objects = conn.execute(
-            "SELECT * FROM detection_objects WHERE prediction_uid = ?", (uid,)
-        ).fetchall()
-
-        return {
-            "uid": session["uid"],
-            "timestamp": session["timestamp"],
-            "original_image": session["original_image"],
-            "predicted_image": session["predicted_image"],
-            "detection_objects": [
-                {
-                    "id": obj["id"],
-                    "label": obj["label"],
-                    "score": obj["score"],
-                    "box": obj["box"],
-                }
-                for obj in objects
-            ],
-        }
-
-
 @app.delete("/prediction/{uid}")
 def delete_prediction(uid: str):
     """
