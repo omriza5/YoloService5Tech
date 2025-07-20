@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Request,Depends
 from sqlalchemy.orm import Session
+from db.utils import get_db
 from services.prediction_service import (
     create_prediction,
     get_predictions_count,
@@ -9,7 +10,6 @@ from services.prediction_service import (
     get_all_predictions_by_score,
     get_prediction_image_by_uid
 )
-from db.utils import get_db
 
 router = APIRouter()
 

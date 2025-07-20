@@ -6,6 +6,7 @@ import os
 from controllers.health_controller import router as health_router
 from controllers.prediction_controller import router as prediction_router
 from controllers.labels_controller import router as labels_router
+from controllers.image_controller import router as image_router
 from services.yolo_model import model
 from db.utils import init_db
 
@@ -34,6 +35,7 @@ os.makedirs(PREDICTED_DIR, exist_ok=True)
 app.include_router(health_router)
 app.include_router(prediction_router)
 app.include_router(labels_router)
+app.include_router(image_router)
 
 @app.get("/stats")
 def get_stats():
@@ -79,17 +81,6 @@ def get_stats():
             "most_common_labels": most_common_labels,
         }
 
-@app.get("/image/{type}/{filename}")
-def get_image(type: str, filename: str):
-    """
-    Get image by type and filename
-    """
-    if type not in ["original", "predicted"]:
-        raise HTTPException(status_code=400, detail="Invalid image type")
-    path = os.path.join("uploads", type, filename)
-    if not os.path.exists(path):
-        raise HTTPException(status_code=404, detail="Image not found")
-    return FileResponse(path)
 
 @app.post("/users")
 def create_user(
