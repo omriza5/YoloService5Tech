@@ -5,11 +5,12 @@ import sqlite3
 import base64
 import bcrypt
 
+# [ ] - import the DB_PATH from setup_db.py
 DB_PATH = "predictions.db"
 @app.middleware("http")
 async def basic_auth_middleware(request: Request, call_next):
     # Allow /health without auth
-    if request.url.path == "/health" or request.url.path == "/users":
+    if request.url.path == "/health":
         return await call_next(request)
     
     # Extract Basic Auth from headers

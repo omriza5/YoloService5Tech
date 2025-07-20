@@ -49,8 +49,8 @@ def create_prediction(file, request, db):
         annotated_image = Image.fromarray(annotated_frame)
         annotated_image.save(predicted_path)
 
-        # [ ] - refactor user_id to be dynamic from middleware state
-        user_id = 1
+        # It could be NULL if no user is logged in
+        user_id = request.state.user_id 
         save_prediction_session(db,uid, original_path, predicted_path, user_id)
 
         detected_labels = []

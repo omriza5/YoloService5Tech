@@ -25,7 +25,7 @@ init_db()
 
 # [ ] - enable auth later
 # Import middleware to ensure registration
-# import middlewares.auth
+import middlewares.auth
 
 
 
