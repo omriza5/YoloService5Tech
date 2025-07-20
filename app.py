@@ -8,6 +8,7 @@ import os
 import uuid
 import shutil
 import time
+from controllers.health_controller import router as health_router
 
 
 # Disable GPU usage
@@ -20,6 +21,8 @@ app = FastAPI()
 # Import middleware to ensure registration
 import middlewares.auth
 
+
+
 UPLOAD_DIR = "uploads/original"
 PREDICTED_DIR = "uploads/predicted"
 DB_PATH = "predictions.db"
@@ -30,7 +33,8 @@ os.makedirs(PREDICTED_DIR, exist_ok=True)
 # Download the AI model (tiny model ~6MB)
 model = YOLO("yolov8n.pt")
 
-
+# app routes
+app.include_router(health_router)
 # Initialize SQLite
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
@@ -416,12 +420,6 @@ def create_user(
         raise HTTPException(status_code=400, detail="Username already exists")
 
 
-@app.get("/health")
-def health():
-    """
-    Health check endpoint
-    """
-    return {"status": "ok"}
 
 
 if __name__ == "__main__":
