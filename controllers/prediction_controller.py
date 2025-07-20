@@ -6,6 +6,7 @@ from services.prediction_service import (
     prediction_by_uid,
     delete_prediction_by_uid,
     get_all_predictions_by_label,
+    get_all_predictions_by_score,
 )
 from db.utils import get_db
 
@@ -61,3 +62,15 @@ def get_predictions_by_label(label: str,db: Session = Depends(get_db)):
     if not predictions:
         raise HTTPException(status_code=404, detail="No predictions found for this label")
     return predictions
+
+
+@router.get("/predictions/score/{min_score}")
+def get_predictions_by_score(min_score: float, db: Session = Depends(get_db)):
+    """
+    Get prediction sessions containing objects with score >= min_score
+    """
+    predictions = get_all_predictions_by_score(min_score, db)
+    if not predictions:
+        raise HTTPException(status_code=404, detail="No predictions found for this score")
+    return predictions
+

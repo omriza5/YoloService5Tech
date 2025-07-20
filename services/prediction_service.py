@@ -153,4 +153,22 @@ def get_all_predictions_by_label(label, db):
         }
         for pred in predictions
     ]
+
+def get_all_predictions_by_score(min_score, db):
+    """
+    Get prediction sessions containing objects with score >= min_score
+    """
+    predictions = db.query(PredictionSession).join(DetectionObject).filter(DetectionObject.score >= min_score).all()
     
+    if not predictions:
+        return None
+    
+    return [
+        {
+            "uid": pred.uid,
+            "timestamp": pred.timestamp,
+            "original_image": pred.original_image,
+            "predicted_image": pred.predicted_image,
+        }
+        for pred in predictions
+    ]

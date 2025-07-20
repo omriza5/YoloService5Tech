@@ -86,26 +86,6 @@ def get_stats():
         }
 
 
-@app.get("/predictions/score/{min_score}")
-def get_predictions_by_score(min_score: float):
-    """
-    Get prediction sessions containing objects with score >= min_score
-    """
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute(
-            """
-            SELECT DISTINCT ps.uid, ps.timestamp
-            FROM prediction_sessions ps
-            JOIN detection_objects do ON ps.uid = do.prediction_uid
-            WHERE do.score >= ?
-        """,
-            (min_score,),
-        ).fetchall()
-
-        return [{"uid": row["uid"], "timestamp": row["timestamp"]} for row in rows]
-
-
 @app.get("/image/{type}/{filename}")
 def get_image(type: str, filename: str):
     """
