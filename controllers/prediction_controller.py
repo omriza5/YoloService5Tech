@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Request,Depends
 from sqlalchemy.orm import Session
-from services.prediction_service import create_prediction, get_predictions_count, prediction_by_uid
+from services.prediction_service import create_prediction, get_predictions_count,get_predictions_count, prediction_by_uid, delete_prediction_by_uid
 from db.utils import get_db
 
 router = APIRouter()
@@ -33,3 +33,15 @@ def get_prediction_by_uid(uid: str, db: Session = Depends(get_db)):
     if not prediction:
         raise HTTPException(status_code=404, detail="Prediction not found")
     return prediction
+
+@router.delete("/prediction/{uid}")
+def delete_prediction(uid: str,db: Session = Depends(get_db)):
+    """
+    Delete prediction session by uid
+    """
+    try:
+        return delete_prediction_by_uid(uid,db)
+    except Exception as e:
+        status_code = getattr(e, "status_code", 500)
+        detail = getattr(e, "detail", "Failed to delete prediction.")
+        raise HTTPException(status_code=status_code, detail=detail)

@@ -8,6 +8,7 @@ from PIL import Image
 from services.yolo_model import model
 from sqlalchemy import func
 from datetime import datetime, timedelta
+from fastapi import HTTPException
 
 UPLOAD_DIR = "uploads/original"
 PREDICTED_DIR = "uploads/predicted"
@@ -109,3 +110,27 @@ def prediction_by_uid(uid, db):
         ],
     }
 
+
+def delete_prediction_by_uid(uid, db):
+    """
+    Delete prediction session by uid
+    """
+    prediction = db.query(PredictionSession).filter(PredictionSession.uid == uid).first()
+    if not prediction:
+        raise HTTPException(status_code=400, detail="Prediction not found")
+    
+    db.query(PredictionSession).filter(PredictionSession.uid == uid).delete()
+    db.query(DetectionObject).filter(DetectionObject.prediction_uid == uid).delete()
+    db.commit()
+
+    # Clean up image files
+    original_image_path = os.path.join(UPLOAD_DIR, uid + ".jpg")
+    predicted_image_path = os.path.join(PREDICTED_DIR, uid + ".jpg")
+
+    if os.path.exists(original_image_path):
+        os.remove(original_image_path)
+    if os.path.exists(predicted_image_path):
+        os.remove(predicted_image_path)
+
+    return {"detail": "Prediction and images deleted"}
+    
