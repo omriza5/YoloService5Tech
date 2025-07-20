@@ -1,7 +1,6 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Body
+from fastapi import FastAPI, HTTPException, Request, Body
 import bcrypt
 from fastapi.responses import FileResponse, Response
-from ultralytics import YOLO
 from PIL import Image
 import sqlite3
 import os
@@ -9,6 +8,9 @@ import uuid
 import shutil
 import time
 from controllers.health_controller import router as health_router
+from controllers.prediction_controller import router as prediction_router
+from services.yolo_model import model
+from db.utils import init_db
 
 
 # Disable GPU usage
@@ -18,8 +20,12 @@ torch.cuda.is_available = lambda: False
 
 app = FastAPI()
 
+# Initialize database
+init_db()
+
+# [ ] - enable auth later
 # Import middleware to ensure registration
-import middlewares.auth
+# import middlewares.auth
 
 
 
@@ -30,67 +36,12 @@ DB_PATH = "predictions.db"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PREDICTED_DIR, exist_ok=True)
 
-# Download the AI model (tiny model ~6MB)
-model = YOLO("yolov8n.pt")
+
 
 # app routes
 app.include_router(health_router)
+app.include_router(prediction_router)
 # Initialize SQLite
-def init_db():
-    with sqlite3.connect(DB_PATH) as conn:
-        # Create the users table
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        """
-        )
-
-        # Add user_id to prediction_sessions
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS prediction_sessions (
-                uid TEXT PRIMARY KEY,
-                user_id INTEGER,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                original_image TEXT,
-                predicted_image TEXT,
-                FOREIGN KEY(user_id) REFERENCES users(id)
-            )
-        """
-        )
-
-        # Create the objects table to store individual detected objects in a given image
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS detection_objects (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                prediction_uid TEXT,
-                label TEXT,
-                score REAL,
-                box TEXT,
-                FOREIGN KEY (prediction_uid) REFERENCES prediction_sessions (uid)
-            )
-        """
-        )
-
-        # Create index for faster queries
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_prediction_uid ON detection_objects (prediction_uid)"
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_label ON detection_objects (label)"
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_score ON detection_objects (score)"
-        )
-
-
-init_db()
 
 
 def save_prediction_session(uid, original_image, predicted_image, user_id):
@@ -119,51 +70,6 @@ def save_detection_object(prediction_uid, label, score, box):
         """,
             (prediction_uid, label, score, str(box)),
         )
-
-
-@app.post("/predict")
-def predict(file: UploadFile = File(...), request: Request = None):
-    """
-    Predict objects in an image
-    """
-    try:
-        start_time = time.time()
-        ext = os.path.splitext(file.filename)[1]
-        uid = str(uuid.uuid4())
-        original_path = os.path.join(UPLOAD_DIR, uid + ext)
-        predicted_path = os.path.join(PREDICTED_DIR, uid + ext)
-
-        with open(original_path, "wb") as f:
-            shutil.copyfileobj(file.file, f)
-
-        results = model(original_path, device="cpu")
-        annotated_frame = results[0].plot()  # NumPy image with boxes
-        annotated_image = Image.fromarray(annotated_frame)
-        annotated_image.save(predicted_path)
-
-        user_id = request.state.user_id
-        save_prediction_session(uid, original_path, predicted_path, user_id)
-
-        detected_labels = []
-        for box in results[0].boxes:
-            label_idx = int(box.cls[0].item())
-            label = model.names[label_idx]
-            score = float(box.conf[0])
-            bbox = box.xyxy[0].tolist()
-            save_detection_object(uid, label, score, bbox)
-            detected_labels.append(label)
-
-        processing_time = round(time.time() - start_time, 2)
-
-        return {
-            "prediction_uid": uid,
-            "detection_count": len(results[0].boxes),
-            "labels": detected_labels,
-            "time_took": processing_time,
-            "user_id": user_id,
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
 
 @app.get("/prediction/count")

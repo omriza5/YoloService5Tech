@@ -1,9 +1,9 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-
 DB_BACKEND = os.getenv("DB_BACKEND", "sqlite")
-print(f"Using database backend: {DB_BACKEND}")
+Base = declarative_base()
+
 if DB_BACKEND == "postgres":
     DATABASE_URL = "postgresql://user:pass@localhost/db"
 else:
@@ -15,11 +15,4 @@ engine = create_engine(
 )
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-Base = declarative_base()
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    
