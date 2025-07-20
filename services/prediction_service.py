@@ -5,8 +5,9 @@ from models.detection_object import DetectionObject
 import time
 import shutil
 from PIL import Image
-from fastapi import FastAPI, Depends, HTTPException
 from services.yolo_model import model
+from sqlalchemy import func
+from datetime import datetime, timedelta
 
 UPLOAD_DIR = "uploads/original"
 PREDICTED_DIR = "uploads/predicted"
@@ -73,4 +74,12 @@ def create_prediction(file, request, db):
         }
 
 
+
+def get_predictions_count(db):
+    """
+    Get the total count of prediction sessions
+    """
+    seven_days_ago = datetime.now() - timedelta(days=7)
+    count = db.query(func.count(PredictionSession.uid)).filter(PredictionSession.timestamp >= seven_days_ago).scalar()
+    return {"prediction_count": count}
 

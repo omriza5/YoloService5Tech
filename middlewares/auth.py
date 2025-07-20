@@ -10,7 +10,7 @@ DB_PATH = "predictions.db"
 @app.middleware("http")
 async def basic_auth_middleware(request: Request, call_next):
     # Allow /health without auth
-    if request.url.path == "/health":
+    if request.url.path == "/health" or request.url.path == "/users":
         return await call_next(request)
     
     # Extract Basic Auth from headers

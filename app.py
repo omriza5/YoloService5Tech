@@ -1,12 +1,8 @@
 from fastapi import FastAPI, HTTPException, Request, Body
 import bcrypt
-from fastapi.responses import FileResponse, Response
-from PIL import Image
+from fastapi.responses import FileResponse
 import sqlite3
 import os
-import uuid
-import shutil
-import time
 from controllers.health_controller import router as health_router
 from controllers.prediction_controller import router as prediction_router
 from services.yolo_model import model
@@ -23,7 +19,6 @@ app = FastAPI()
 # Initialize database
 init_db()
 
-# [ ] - enable auth later
 # Import middleware to ensure registration
 import middlewares.auth
 
@@ -41,47 +36,6 @@ os.makedirs(PREDICTED_DIR, exist_ok=True)
 # app routes
 app.include_router(health_router)
 app.include_router(prediction_router)
-# Initialize SQLite
-
-
-def save_prediction_session(uid, original_image, predicted_image, user_id):
-    """
-    Save prediction session to database
-    """
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            """
-            INSERT INTO prediction_sessions (uid, original_image, predicted_image,user_id)
-            VALUES (?, ?, ?, ?)
-        """,
-            (uid, original_image, predicted_image, user_id),
-        )
-
-
-def save_detection_object(prediction_uid, label, score, box):
-    """
-    Save detection object to database
-    """
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            """
-            INSERT INTO detection_objects (prediction_uid, label, score, box)
-            VALUES (?, ?, ?, ?)
-        """,
-            (prediction_uid, label, score, str(box)),
-        )
-
-
-@app.get("/prediction/count")
-def prediction_count():
-    """
-    Get the total count of prediction sessions
-    """
-    with sqlite3.connect(DB_PATH) as conn:
-        count = conn.execute(
-            "SELECT COUNT(*) FROM prediction_sessions WHERE timestamp >= datetime('now', '-7 days')"
-        ).fetchone()[0]
-    return {"prediction_count": count}
 
 
 @app.get("/prediction/{uid}")
