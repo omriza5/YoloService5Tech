@@ -86,26 +86,6 @@ def get_stats():
         }
 
 
-@app.get("/predictions/label/{label}")
-def get_predictions_by_label(label: str):
-    """
-    Get prediction sessions containing objects with specified label
-    """
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute(
-            """
-            SELECT DISTINCT ps.uid, ps.timestamp
-            FROM prediction_sessions ps
-            JOIN detection_objects do ON ps.uid = do.prediction_uid
-            WHERE do.label = ?
-        """,
-            (label,),
-        ).fetchall()
-
-        return [{"uid": row["uid"], "timestamp": row["timestamp"]} for row in rows]
-
-
 @app.get("/predictions/score/{min_score}")
 def get_predictions_by_score(min_score: float):
     """

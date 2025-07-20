@@ -134,3 +134,23 @@ def delete_prediction_by_uid(uid, db):
 
     return {"detail": "Prediction and images deleted"}
     
+
+def get_all_predictions_by_label(label, db):
+    """
+    Get prediction sessions containing objects with specified label
+    """
+    predictions = db.query(PredictionSession).join(DetectionObject).filter(DetectionObject.label == label).all()
+    
+    if not predictions:
+        raise HTTPException(status_code=404, detail="No predictions found for this label")
+    
+    return [
+        {
+            "uid": pred.uid,
+            "timestamp": pred.timestamp,
+            "original_image": pred.original_image,
+            "predicted_image": pred.predicted_image,
+        }
+        for pred in predictions
+    ]
+    
