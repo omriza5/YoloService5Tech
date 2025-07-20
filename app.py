@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request, Body
-import bcrypt
+
 from fastapi.responses import FileResponse
 import sqlite3
 import os
@@ -7,6 +7,7 @@ from controllers.health_controller import router as health_router
 from controllers.prediction_controller import router as prediction_router
 from controllers.labels_controller import router as labels_router
 from controllers.image_controller import router as image_router
+from controllers.user_controller import router as user_router
 from services.yolo_model import model
 from db.utils import init_db
 
@@ -36,6 +37,7 @@ app.include_router(health_router)
 app.include_router(prediction_router)
 app.include_router(labels_router)
 app.include_router(image_router)
+app.include_router(user_router)
 
 @app.get("/stats")
 def get_stats():
@@ -80,36 +82,6 @@ def get_stats():
             "average_confidence_score": avg_score,
             "most_common_labels": most_common_labels,
         }
-
-
-@app.post("/users")
-def create_user(
-    username: str = Body(...),
-    password: str = Body(...),
-):
-    """
-    Create a new user with hashed password
-    """
-    if not username or not password or username.strip() == "" or password.strip() == "":
-        raise HTTPException(status_code=400, detail="Invalid Credentials")
-    hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode(
-        "utf-8"
-    )
-    username = username.lower().strip()
-    try:
-        with sqlite3.connect(DB_PATH) as conn:
-            conn.execute(
-                """
-                INSERT INTO users (username, password)
-                VALUES (?, ?)
-            """,
-                (username, hashed_pw),
-            )
-        return {"detail": "User created successfully"}
-    except sqlite3.IntegrityError:
-        raise HTTPException(status_code=400, detail="Username already exists")
-
-
 
 
 if __name__ == "__main__":
