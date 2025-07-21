@@ -10,7 +10,7 @@ def create_new_user(username, password, db):
     
     existing_user = db.query(User).filter(User.username == username).first()
     if existing_user:
-        raise HTTPException(status_code=400, detail="User already exists")
+        raise HTTPException(status_code=400, detail="Username already exists")
     
     hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode(
         "utf-8"
