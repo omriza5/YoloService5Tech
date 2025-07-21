@@ -15,6 +15,6 @@ def get_labels(db: Session = Depends(get_db)):
     labels = get_unique_labels(db)
     
     if not labels or len(labels) == 0:
-        raise HTTPException(status_code=404, detail="No labels found")
+        return {"labels": []}
     
     return {"labels": labels}
