@@ -4,7 +4,6 @@ from fastapi.testclient import TestClient
 from app import app, PREDICTED_DIR, UPLOAD_DIR
 from db.utils import init_db
 from db.setup_db import DB_PATH
-from tests.services.image_utils import create_dummy_image
 from .services.auth import get_basic_auth_header
 
 class TestDeletePredictionEndpoint(unittest.TestCase):
@@ -26,11 +25,10 @@ class TestDeletePredictionEndpoint(unittest.TestCase):
 
     def test_delete_existing_prediction(self):
         # Arrange
-        image = create_dummy_image('red','donut')
         headers = get_basic_auth_header(self.username, self.password)
         response = self.client.post(
             "/predict",
-            files={"file": ("test_image.jpg", image, "image/jpeg")},
+            files={"file": ("test.jpg", open("tests/assets/bear.jpg", "rb"), "image/jpeg")},
             headers=headers
         )
         prediction = response.json()
@@ -46,11 +44,10 @@ class TestDeletePredictionEndpoint(unittest.TestCase):
 
     def test_delete_prediction_unauthorized_returns_401(self):
         # Arrange
-        image = create_dummy_image('red', 'donut')
         headers = get_basic_auth_header(self.username, self.password)
         response = self.client.post(
             "/predict",
-            files={"file": ("test_image.jpg", image, "image/jpeg")},
+            files={"file": ("test.jpg", open("tests/assets/bear.jpg", "rb"), "image/jpeg")},
             headers=headers
         )
         prediction = response.json()
@@ -77,10 +74,9 @@ class TestDeletePredictionEndpoint(unittest.TestCase):
 
     def test_delete_twice_returns_400(self):
         # Arrange
-        image = create_dummy_image('red','donut')
         response = self.client.post(
             "/predict",
-            files={"file": ("test_image.jpg", image, "image/jpeg")}
+            files={"file": ("test.jpg", open("tests/assets/bear.jpg", "rb"), "image/jpeg")}
         )
         prediction = response.json()
         uid = prediction['prediction_uid']
