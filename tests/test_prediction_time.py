@@ -1,26 +1,21 @@
 import unittest
 from fastapi.testclient import TestClient
-from PIL import Image
 import io
-
 from app import app
+from db.utils import init_db
 
 class TestProcessingTime(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
-        
-        # Create a simple test image
-        self.test_image = Image.new('RGB', (100, 100), color='red')
-        self.image_bytes = io.BytesIO()
-        self.test_image.save(self.image_bytes, format='JPEG')
-        self.image_bytes.seek(0)
+        init_db()
+
 
     def test_predict_includes_processing_time(self):
         """Test that the predict endpoint returns processing time"""
         
         response = self.client.post(
             "/predict",
-            files={"file": ("test.jpg", self.image_bytes, "image/jpeg")}
+            files={"file": ("test.jpg", open("tests/assets/bear.jpg", "rb"), "image/jpeg")}
         )
         
         # Check response
