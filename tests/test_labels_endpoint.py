@@ -1,7 +1,8 @@
 import unittest
 from fastapi.testclient import TestClient
 import io
-from app import app, init_db
+from app import app
+from db.utils import init_db
 import os
 from .services.auth import get_basic_auth_header
 from db.setup_db import DB_PATH

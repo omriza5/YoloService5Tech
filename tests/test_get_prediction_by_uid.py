@@ -3,7 +3,8 @@ from fastapi.testclient import TestClient
 from .services.auth import get_basic_auth_header
 import os
 from db.setup_db import DB_PATH
-from app import app, init_db
+from app import app
+from db.utils import init_db
 
 client = TestClient(app)
 

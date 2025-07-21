@@ -2,7 +2,8 @@ import unittest
 import os
 from fastapi.testclient import TestClient
 from db.setup_db import DB_PATH
-from app import app, init_db
+from app import app
+from db.utils import init_db
 
 
 class TestUsersEndpoint(unittest.TestCase):

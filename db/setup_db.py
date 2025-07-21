@@ -11,7 +11,7 @@ if DB_BACKEND == "postgres":
 else:
     DATABASE_URL = "sqlite:///./predictions.db"
 
-DB_PATH = "predictions.db"
+DB_PATH = "../predictions.db"
 
 engine = create_engine(
     DATABASE_URL,
