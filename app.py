@@ -5,7 +5,7 @@ from controllers.labels_controller import router as labels_router
 from controllers.image_controller import router as image_router
 from controllers.user_controller import router as user_router
 from controllers.stats_controller import router as stats_router
-from services.yolo_model import model
+from services.yolo_service import model
 from db.utils import init_db
 import os
 
@@ -37,5 +37,4 @@ app.include_router(stats_router)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="0.0.0.0", port=8080, reload=True)
     uvicorn.run("app:app", host="0.0.0.0", port=8080, reload=True)

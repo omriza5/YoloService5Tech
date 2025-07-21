@@ -5,7 +5,7 @@ from models.detection_object import DetectionObject
 import time
 import shutil
 from PIL import Image
-from services.yolo_model import model
+from services.yolo_service import model
 from sqlalchemy import func
 from datetime import datetime, timedelta
 from fastapi import HTTPException
