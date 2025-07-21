@@ -1,7 +1,8 @@
 import unittest
 import os
 from fastapi.testclient import TestClient
-from app import app, DB_PATH, init_db, PREDICTED_DIR, UPLOAD_DIR
+from app import app, init_db, PREDICTED_DIR, UPLOAD_DIR
+from db.setup_db import DB_PATH
 from tests.services.image_utils import create_dummy_image
 from .services.auth import get_basic_auth_header
 
@@ -99,6 +100,6 @@ class TestDeletePredictionEndpoint(unittest.TestCase):
         expected_second_response = {"detail": "Prediction not found"}
         self.assertEqual(second_delete_response.status_code, 400)
         self.assertEqual(second_delete_response.json(), expected_second_response)
-        
+
 
 

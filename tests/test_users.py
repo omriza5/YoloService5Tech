@@ -1,7 +1,8 @@
 import unittest
 import os
 from fastapi.testclient import TestClient
-from app import app, DB_PATH, init_db
+from db.setup_db import DB_PATH
+from app import app, init_db
 
 
 class TestUsersEndpoint(unittest.TestCase):
@@ -50,5 +51,5 @@ class TestUsersEndpoint(unittest.TestCase):
         data = response.json()
         self.assertIn("detail", data)
         self.assertEqual(data["detail"], "Invalid Credentials")
-    
-    
+
+

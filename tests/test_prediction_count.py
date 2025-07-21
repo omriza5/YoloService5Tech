@@ -4,7 +4,8 @@ from PIL import Image
 import unittest
 from fastapi.testclient import TestClient
 from .services.auth import get_basic_auth_header
-from app import DB_PATH, app,init_db
+from db.setup_db import DB_PATH
+from app import app,init_db
 
 
 class TestPredictionCount(unittest.TestCase):
@@ -70,5 +71,5 @@ class TestPredictionCount(unittest.TestCase):
         """Test that accessing prediction_count without authentication returns 401"""
         response = self.client.get("/prediction/count")
         self.assertEqual(response.status_code, 401)
-        
-        
+
+
