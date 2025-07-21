@@ -28,11 +28,10 @@ class TestStatsEndpoint(unittest.TestCase):
 
     def test_stats_single_prediction(self):
         # Arrange
-        image = create_dummy_image('red', 'umbrella')
         headers = get_basic_auth_header(self.username, self.password)
         self.client.post(
             "/predict",
-            files={"file": ("test_image.jpg", image, "image/jpeg")}
+            files={"file": ("test.jpg", open("tests/assets/bear.jpg", "rb"), "image/jpeg")}
         )
 
         # Act
@@ -49,11 +48,10 @@ class TestStatsEndpoint(unittest.TestCase):
     def test_stats_multiple_predictions(self):
         # Arrange
         headers = get_basic_auth_header(self.username, self.password)
-        for color, shape in [("red", "umbrella"), ("blue", "umbrella"), ("red", "donut")]:
-            image = create_dummy_image(color, shape)
+        for image in ["tests/assets/bear.jpg", "tests/assets/cat.jpg",]:
             self.client.post(
                 "/predict",
-                files={"file": ("test_image.jpg", image, "image/jpeg")}
+                files={"file": ("test_image.jpg", open(image,"rb"), "image/jpeg")}
             )
         
         # Act
@@ -62,7 +60,7 @@ class TestStatsEndpoint(unittest.TestCase):
         
         # Assert
         data = response.json()
-        self.assertEqual(data["total_predictions"], 3)
+        self.assertEqual(data["total_predictions"], 2)
         self.assertIsInstance(data["average_confidence_score"], float)
         self.assertIsInstance(data["most_common_labels"], dict)
         self.assertGreaterEqual(len(data["most_common_labels"]), 1)
@@ -71,16 +69,15 @@ class TestStatsEndpoint(unittest.TestCase):
     def test_stats_label_counts(self):
         # Arrange
         headers = get_basic_auth_header(self.username, self.password)
-        for _ in range(2):
-            image = create_dummy_image('red', 'umbrella')
+        for _ in range(2):    
             self.client.post(
                 "/predict",
-                files={"file": ("test_image.jpg", image, "image/jpeg")}
+                files={"file": ("test.jpg", open("tests/assets/bear.jpg", "rb"), "image/jpeg")}
             )
-        image = create_dummy_image('blue', 'donut')
+
         self.client.post(
             "/predict",
-            files={"file": ("test_image.jpg", image, "image/jpeg")}
+            files={"file": ("test.jpg", open("tests/assets/cat.jpg", "rb"), "image/jpeg")}
         )
         
         # Act
