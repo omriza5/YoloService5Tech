@@ -1,17 +1,15 @@
 import unittest
 from fastapi.testclient import TestClient
 from app import app
-from db.setup_db import DB_PATH
 from db.utils import init_db
 from .services.auth import get_basic_auth_header
-import os
+
 
 class TestAuthMiddleware(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
-        if os.path.exists(DB_PATH):
-            os.remove(DB_PATH)
         init_db()
+        
         # Create a test user
         self.username = "testuser"
         self.password = "testpass"

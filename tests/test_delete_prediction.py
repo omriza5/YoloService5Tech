@@ -3,16 +3,13 @@ import os
 from fastapi.testclient import TestClient
 from app import app, PREDICTED_DIR, UPLOAD_DIR
 from db.utils import init_db
-from db.setup_db import DB_PATH
 from .services.auth import get_basic_auth_header
 
 class TestDeletePredictionEndpoint(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
-        # Clean DB and folders for isolation
-        if os.path.exists(DB_PATH):
-            os.remove(DB_PATH)
         init_db()
+        
         # remove any existing files in upload and predicted directories
         for dir in [UPLOAD_DIR, PREDICTED_DIR]:
             if os.path.exists(dir):

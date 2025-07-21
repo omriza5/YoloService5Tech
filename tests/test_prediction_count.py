@@ -1,10 +1,8 @@
 import io
-import os
 from PIL import Image
 import unittest
 from fastapi.testclient import TestClient
 from .services.auth import get_basic_auth_header
-from db.setup_db import DB_PATH
 from app import app
 from db.utils import init_db
 
@@ -12,10 +10,8 @@ from db.utils import init_db
 class TestPredictionCount(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
-        if os.path.exists(DB_PATH):
-            os.remove(DB_PATH)
-        
         init_db()    
+        
         # Create a simple test image
         self.test_image = Image.new('RGB', (100, 100), color='red')
         self.image_bytes = io.BytesIO()

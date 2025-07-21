@@ -1,7 +1,5 @@
 import unittest
-import os
 from fastapi.testclient import TestClient
-from db.setup_db import DB_PATH
 from app import app
 from db.utils import init_db
 
@@ -9,9 +7,6 @@ from db.utils import init_db
 class TestUsersEndpoint(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
-    
-        if os.path.exists(DB_PATH):
-            os.remove(DB_PATH)
         init_db()
 
     def test_create_user(self):
