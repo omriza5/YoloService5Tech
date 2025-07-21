@@ -5,8 +5,6 @@ from db.utils import get_db
 
 router = APIRouter()
 
-
-
 @router.get("/labels")
 def get_labels(db: Session = Depends(get_db)):
     """
