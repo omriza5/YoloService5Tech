@@ -1,12 +1,11 @@
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from app import app
-import sqlite3
 import base64
 import bcrypt
+from db.setup_db import SessionLocal
+from models.user import User
 
-# [ ] - import the DB_PATH from setup_db.py
-DB_PATH = "predictions.db"
 @app.middleware("http")
 async def basic_auth_middleware(request: Request, call_next):
     # Allow /health without auth
@@ -46,16 +45,14 @@ def get_credentials_from_headers(request: Request):
 def verify_credentials(username: str, user_password: str):
     if not username or not user_password:
         return None
-    username = username.lower().strip() 
-    with sqlite3.connect(DB_PATH) as conn:
-        row = conn.execute(
-            "SELECT id, password FROM users WHERE username = ?",
-            (username,)
-        ).fetchone()
-        if not row:
+    username = username.lower().strip()
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.username == username).first()
+        if not user:
             return None
-        user_id, password = row
-
-        if bcrypt.checkpw(user_password.encode("utf-8"), password.encode("utf-8")):
-            return user_id
-    return None
+        if bcrypt.checkpw(user_password.encode("utf-8"), user.password.encode("utf-8")):
+            return user.id
+        return None
+    finally:
+        db.close()
