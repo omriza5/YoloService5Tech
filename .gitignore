@@ -12,7 +12,9 @@
 *.pem
 uploads/
 images/
+temp/
 __pycache__/
 tests/__pycache__/
 .coverage
+
 
