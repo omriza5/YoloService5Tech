@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Request,Depends
+from fastapi import APIRouter,Depends
 from sqlalchemy.orm import Session
 from services.labels_service import get_unique_labels
 from db.utils import get_db

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Integer, Float
+from sqlalchemy import Column, String, DateTime, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 # All models inherit from this base class

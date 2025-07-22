@@ -1,11 +1,8 @@
-import io
-from PIL import Image
 import unittest
 from fastapi.testclient import TestClient
 from .services.auth import get_basic_auth_header
 from app import app
 from db.utils import init_db
-
 
 class TestPredictionCount(unittest.TestCase):
     def setUp(self):
@@ -16,7 +13,6 @@ class TestPredictionCount(unittest.TestCase):
         self.password = "testpass"
         self.client.post("/users", json={"username": self.username, "password": self.password})
     
-
     def test_prediction_count(self):
         """Test the prediction_count endpoint"""
         headers = get_basic_auth_header(self.username, self.password)

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Request,Depends
+from fastapi import APIRouter, HTTPException,Depends
 from sqlalchemy.orm import Session
 from db.utils import get_db
 from services.image_service import get_image_by_type_and_filename

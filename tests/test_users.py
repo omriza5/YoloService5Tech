@@ -3,7 +3,6 @@ from fastapi.testclient import TestClient
 from app import app
 from db.utils import init_db
 
-
 class TestUsersEndpoint(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
