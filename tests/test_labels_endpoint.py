@@ -1,16 +1,14 @@
 import unittest
 from fastapi.testclient import TestClient
 import io
-from app import app, DB_PATH, init_db
-import os
+from app import app
+from db.utils import init_db
 from .services.auth import get_basic_auth_header
+
 
 class TestLabelsEndpoint(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
-        if os.path.exists(DB_PATH):
-            os.remove(DB_PATH)
-            
         init_db()
         
         self.username = "testuser"
@@ -126,4 +124,4 @@ class TestLabelsEndpoint(unittest.TestCase):
         headers = get_basic_auth_header("wronguser", "wrongpass")
         response = self.client.get("/labels", headers=headers)
         self.assertEqual(response.status_code, 401)
-        
+

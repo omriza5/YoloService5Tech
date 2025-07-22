@@ -1,17 +1,15 @@
 import unittest
 import os
 from fastapi.testclient import TestClient
-from app import app, DB_PATH, init_db, PREDICTED_DIR, UPLOAD_DIR
-from tests.services.image_utils import create_dummy_image
+from app import app, PREDICTED_DIR, UPLOAD_DIR
+from db.utils import init_db
 from .services.auth import get_basic_auth_header
 
 class TestDeletePredictionEndpoint(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
-        # Clean DB and folders for isolation
-        if os.path.exists(DB_PATH):
-            os.remove(DB_PATH)
         init_db()
+        
         # remove any existing files in upload and predicted directories
         for dir in [UPLOAD_DIR, PREDICTED_DIR]:
             if os.path.exists(dir):
@@ -24,11 +22,10 @@ class TestDeletePredictionEndpoint(unittest.TestCase):
 
     def test_delete_existing_prediction(self):
         # Arrange
-        image = create_dummy_image('red','donut')
         headers = get_basic_auth_header(self.username, self.password)
         response = self.client.post(
             "/predict",
-            files={"file": ("test_image.jpg", image, "image/jpeg")},
+            files={"file": ("test.jpg", open("tests/assets/bear.jpg", "rb"), "image/jpeg")},
             headers=headers
         )
         prediction = response.json()
@@ -44,11 +41,10 @@ class TestDeletePredictionEndpoint(unittest.TestCase):
 
     def test_delete_prediction_unauthorized_returns_401(self):
         # Arrange
-        image = create_dummy_image('red', 'donut')
         headers = get_basic_auth_header(self.username, self.password)
         response = self.client.post(
             "/predict",
-            files={"file": ("test_image.jpg", image, "image/jpeg")},
+            files={"file": ("test.jpg", open("tests/assets/bear.jpg", "rb"), "image/jpeg")},
             headers=headers
         )
         prediction = response.json()
@@ -75,10 +71,9 @@ class TestDeletePredictionEndpoint(unittest.TestCase):
 
     def test_delete_twice_returns_400(self):
         # Arrange
-        image = create_dummy_image('red','donut')
         response = self.client.post(
             "/predict",
-            files={"file": ("test_image.jpg", image, "image/jpeg")}
+            files={"file": ("test.jpg", open("tests/assets/bear.jpg", "rb"), "image/jpeg")}
         )
         prediction = response.json()
         uid = prediction['prediction_uid']
@@ -99,6 +94,6 @@ class TestDeletePredictionEndpoint(unittest.TestCase):
         expected_second_response = {"detail": "Prediction not found"}
         self.assertEqual(second_delete_response.status_code, 400)
         self.assertEqual(second_delete_response.json(), expected_second_response)
-        
+
 
 

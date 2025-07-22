@@ -1,17 +1,14 @@
 import unittest
 from fastapi.testclient import TestClient
 from .services.auth import get_basic_auth_header
-import os
-from app import app, DB_PATH, init_db
+from app import app
+from db.utils import init_db
 
 client = TestClient(app)
 
 class TestGetPredictionByUidEndpoint(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
-        # Clean DB and folders for isolation
-        if os.path.exists(DB_PATH):
-            os.remove(DB_PATH)
         init_db()
         
         self.username = "testuser"
