@@ -1,5 +1,3 @@
-
-
 from datetime import datetime, timedelta
 from models.detection_object import DetectionObject  
 
