@@ -56,3 +56,5 @@ jobs:
               sudo systemctl start yolo
             fi
             sudo systemctl status yolo --no-pager
+
+# [ ] -  add service to github
