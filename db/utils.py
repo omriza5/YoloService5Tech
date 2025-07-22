@@ -1,4 +1,3 @@
-import os
 from db.setup_db import SessionLocal, Base, engine
 # Dont remove models imports, it is necessary for the models to be registered
 import models.detection_object
