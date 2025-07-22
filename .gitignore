@@ -17,5 +17,6 @@ __pycache__/
 *.pyc
 tests/__pycache__/
 .coverage
+coverage.xml
 
 
