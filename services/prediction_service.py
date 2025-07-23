@@ -6,36 +6,19 @@ import time
 import shutil
 from PIL import Image
 from services.yolo_service import model
-from sqlalchemy import func
 from datetime import datetime, timedelta
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
+from db.dao.predictions import (save_prediction_session_dao, 
+                                get_predictions_count_dao,
+                                get_prediction_by_uid_dao,
+                                delete_prediction_by_uid_dao,
+                                get_all_predictions_by_label_dao,
+                                get_all_predictions_by_score_dao)
+from db.dao.detections import save_detection_object_dao, get_detection_objects_by_prediction_uid_dao
 
 UPLOAD_DIR = "uploads/original"
 PREDICTED_DIR = "uploads/predicted"
-
-
-def save_prediction_session(db,uid, original_image, predicted_image, user_id):
-    """
-    Save prediction session to database
-    """
-    row = PredictionSession(uid=uid, predicted_image=predicted_image, original_image=original_image, user_id=user_id)
-    
-    db.add(row)
-    db.commit()
-
-def save_detection_object(db,prediction_uid, label, score, box):
-    """
-    Save detection object to database
-    """
-    row = DetectionObject(
-        prediction_uid=prediction_uid,
-        label=label,
-        score=score,
-        box=str(box)
-    )
-    db.add(row)
-    db.commit()
 
 def create_prediction(file, request, db):
     start_time = time.time()
@@ -54,7 +37,7 @@ def create_prediction(file, request, db):
 
         # It could be NULL if no user is logged in
         user_id = request.state.user_id 
-        save_prediction_session(db,uid, original_path, predicted_path, user_id)
+        save_prediction_session_dao(db,uid, original_path, predicted_path, user_id)
 
         detected_labels = []
         for box in results[0].boxes:
@@ -62,7 +45,7 @@ def create_prediction(file, request, db):
             label = model.names[label_idx]
             score = float(box.conf[0])
             bbox = box.xyxy[0].tolist()
-            save_detection_object(db,uid, label, score, bbox)
+            save_detection_object_dao(db,uid, label, score, bbox)
             detected_labels.append(label)
 
         processing_time = round(time.time() - start_time, 2)
@@ -82,18 +65,18 @@ def get_predictions_count(db):
     Get the total count of prediction sessions
     """
     seven_days_ago = datetime.now() - timedelta(days=7)
-    count = db.query(func.count(PredictionSession.uid)).filter(PredictionSession.timestamp >= seven_days_ago).scalar()
+    count = get_predictions_count_dao(db,timestamp=seven_days_ago)
     return {"prediction_count": count}
 
 def prediction_by_uid(uid, db):
     """
     Get prediction session by uid with all detected objects
     """
-    prediction = db.query(PredictionSession).filter(PredictionSession.uid == uid).first()
+    prediction = get_prediction_by_uid_dao(db, uid)
     if not prediction:
         return None
         
-    objects = db.query(DetectionObject).filter(DetectionObject.prediction_uid == uid).all()
+    objects = get_detection_objects_by_prediction_uid_dao(db, uid)
 
     return {
         "uid": prediction.uid,
@@ -116,13 +99,11 @@ def delete_prediction_by_uid(uid, db):
     """
     Delete prediction session by uid
     """
-    prediction = db.query(PredictionSession).filter(PredictionSession.uid == uid).first()
+    prediction = get_prediction_by_uid_dao(db, uid)
     if not prediction:
         raise HTTPException(status_code=400, detail="Prediction not found")
     
-    db.query(PredictionSession).filter(PredictionSession.uid == uid).delete()
-    db.query(DetectionObject).filter(DetectionObject.prediction_uid == uid).delete()
-    db.commit()
+    delete_prediction_by_uid_dao(db, uid)
 
     # Clean up image files
     original_image_path = os.path.join(UPLOAD_DIR, uid + ".jpg")
@@ -140,7 +121,7 @@ def get_all_predictions_by_label(label, db):
     """
     Get prediction sessions containing objects with specified label
     """
-    predictions = db.query(PredictionSession).join(DetectionObject).filter(DetectionObject.label == label).all()
+    predictions = get_all_predictions_by_label_dao(db, label)
     
     if not predictions:
         raise HTTPException(status_code=404, detail="No predictions found for this label")
@@ -159,7 +140,7 @@ def get_all_predictions_by_score(min_score, db):
     """
     Get prediction sessions containing objects with score >= min_score
     """
-    predictions = db.query(PredictionSession).join(DetectionObject).filter(DetectionObject.score >= min_score).all()
+    predictions = get_all_predictions_by_score_dao(db, min_score)
     
     if not predictions:
         return None
@@ -177,7 +158,7 @@ def get_all_predictions_by_score(min_score, db):
 
 def get_prediction_image_by_uid(uid, request, db):
     accept = request.headers.get("accept", "")
-    prediction = db.query(PredictionSession).filter(PredictionSession.uid == uid).first()
+    prediction = get_prediction_by_uid_dao(db, uid)
     if not prediction:
         raise HTTPException(status_code=404, detail="Prediction not found")
     image_path = prediction.predicted_image
