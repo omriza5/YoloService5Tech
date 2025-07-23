@@ -2,7 +2,6 @@ import unittest
 from fastapi.testclient import TestClient
 from app import app
 from db.utils import init_db
-from tests.services.image_utils import create_dummy_image
 from .services.auth import get_basic_auth_header
 
 class TestStatsEndpoint(unittest.TestCase):

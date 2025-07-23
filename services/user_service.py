@@ -1,6 +1,7 @@
 import bcrypt
 from fastapi import HTTPException
 from models.user import User
+from db.dao.users import get_user_by_username_dao, create_user_dao
 
 def create_new_user(username, password, db):
     if not username or not password or username.strip() == "" or password.strip() == "":
@@ -8,7 +9,7 @@ def create_new_user(username, password, db):
     
     username = username.lower().strip()
     
-    existing_user = db.query(User).filter(User.username == username).first()
+    existing_user = get_user_by_username_dao(db, username)
     if existing_user:
         raise HTTPException(status_code=400, detail="Username already exists")
     
@@ -17,8 +18,8 @@ def create_new_user(username, password, db):
     )
     
     user = User(username=username, password=hashed_pw)
-    db.add(user)
-    db.commit()
+    create_user_dao(db, user)
+    
     return {"detail": "User created successfully"}
         
         
