@@ -50,3 +50,12 @@ curl -X POST -F "file=@your_image.jpg" http://localhost:8080/predict
 ```bash
 curl http://localhost:8080/prediction/{uid}
 ```
+
+## CI/CD: GitHub Actions
+
+This repository uses GitHub Actions for automated testing and deployment:
+
+- **Tests:** On every push or pull request, the workflow runs automated tests to ensure code quality and correctness.
+- **Deployment:** Deployment is triggered only from the `main` branch and requires passing all tests.
+
+**Note:** Changes are merged to the `main` branch only if the deployment job succeeds.
