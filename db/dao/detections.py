@@ -34,3 +34,12 @@ def get_most_common_labels_since(db, since, limit=5):
     )
     
 
+def get_unique_labels_since_dao(db, since=None):
+    """
+    Get all distinct labels detected in the last N days
+    """
+    query = db.query(DetectionObject.label).distinct()
+    if since is not None:
+        query = query.filter(DetectionObject.timestamp >= since)
+    return query.all()
+    
