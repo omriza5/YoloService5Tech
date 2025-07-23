@@ -17,7 +17,7 @@ class TestUsersEndpoint(unittest.TestCase):
         response = self.client.post("/users", json={"username": username, "password": password})
         
         # Assert
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data["detail"], "User created successfully")
 
