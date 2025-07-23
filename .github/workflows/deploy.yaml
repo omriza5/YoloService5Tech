@@ -47,6 +47,10 @@ jobs:
               pip install -r requirements.txt
             fi
 
+            if [ ! -f /etc/systemd/system/yolo.service ]; then
+              sudo cp deploy/yolo.service /etc/systemd/system/yolo.service
+            fi
+
             # Restart the systemd service
             sudo systemctl daemon-reload
             sudo systemctl enable yolo
@@ -56,5 +60,3 @@ jobs:
               sudo systemctl start yolo
             fi
             sudo systemctl status yolo --no-pager
-
-# [ ] -  add service to github
