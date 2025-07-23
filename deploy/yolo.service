@@ -1,0 +1,11 @@
+[Unit]
+Description=Yolo Service
+After=network.target
+
+[Service]
+WorkingDirectory=/home/ubuntu/YoloService5Tech
+ExecStart=/home/ubuntu/YoloService5Tech/.venv/bin/python /home/ubuntu/YoloService5Tech/app.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
