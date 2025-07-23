@@ -1,7 +1,5 @@
 import os
 import uuid
-from models.predection_session import PredictionSession
-from models.detection_object import DetectionObject
 import time
 import shutil
 from PIL import Image

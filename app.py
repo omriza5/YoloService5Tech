@@ -5,7 +5,6 @@ from controllers.labels_controller import router as labels_router
 from controllers.image_controller import router as image_router
 from controllers.user_controller import router as user_router
 from controllers.stats_controller import router as stats_router
-from services.yolo_service import model
 from db.utils import init_db
 import os
 
