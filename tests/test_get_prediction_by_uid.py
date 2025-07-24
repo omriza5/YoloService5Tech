@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch, Mock, ANY
 from fastapi.testclient import TestClient
 from app import app
-from db.utils import init_db
+from db.utils import get_db
 from .services.fake_entities import FakePrediction
 
 client = TestClient(app)
@@ -10,10 +10,10 @@ client = TestClient(app)
 class TestGetPredictionByUidEndpoint(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
-        def override_init_db():
+        def override_get_db():
             return Mock()
-        
-        app.dependency_overrides[init_db] = override_init_db
+
+        app.dependency_overrides[get_db] = override_get_db
 
 
     def tearDown(self):
