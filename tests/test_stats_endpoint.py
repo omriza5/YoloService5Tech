@@ -11,8 +11,6 @@ class TestStatsEndpoint(unittest.TestCase):
         # Mock the database dependency
         app.dependency_overrides[get_db] = lambda: Mock()
         
-        
-
     def tearDown(self):
         # Clean up dependency overrides after each test
         app.dependency_overrides = {}
