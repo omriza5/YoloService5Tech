@@ -1,8 +1,6 @@
 import unittest
 from unittest.mock import patch, Mock, ANY
-from fastapi import HTTPException
 from fastapi.testclient import TestClient
-from .services.auth import get_basic_auth_header
 from app import app
 from db.utils import get_db
 
