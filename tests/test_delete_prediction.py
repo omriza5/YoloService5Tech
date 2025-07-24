@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch, Mock, ANY
 from fastapi.testclient import TestClient
 from fastapi import HTTPException
+from app import app
 from db.utils import get_db
 
 class TestDeletePredictionEndpoint(unittest.TestCase):
