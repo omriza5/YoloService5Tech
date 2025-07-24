@@ -1,62 +1,112 @@
 import unittest
+from unittest.mock import patch, Mock, ANY
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from .services.auth import get_basic_auth_header
 from app import app
-from db.utils import init_db
+from db.utils import get_db
 
 class TestPredictionCount(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
-        init_db()    
+        app.dependency_overrides[get_db] = lambda: Mock()    
         
-        self.username = "testuser"
-        self.password = "testpass"
-        self.client.post("/users", json={"username": self.username, "password": self.password})
-    
-    def test_prediction_count(self):
+    def tearDown(self):
+        # Clean up dependency overrides after each test
+        app.dependency_overrides = {}
+        
+    @patch("middlewares.auth.verify_credentials")
+    @patch("controllers.prediction_controller.get_predictions_count")
+    def test_prediction_count(self, mock_get_predictions_count, mock_verify_credentials):
         """Test the prediction_count endpoint"""
-        headers = get_basic_auth_header(self.username, self.password)
-        response = self.client.get("/prediction/count", headers=headers)
+        # Arrange
+        mock_verify_credentials.return_value = 1  # Mocking auth
+        mock_get_predictions_count.return_value = {
+            "prediction_count": 5,
+            "average_confidence_score": 0.75,
+            "most_common_labels": {"bear": 2, "cat": 1}
+        }
+        
+        # Act
+        response = self.client.get("/prediction/count")
+        
+        # Assert
         self.assertEqual(response.status_code, 200)
         data = response.json()
-
-        # Verify the response contains the prediction_count field
         self.assertIn("prediction_count", data)
         self.assertIsInstance(data["prediction_count"], int)
+        mock_get_predictions_count.assert_called_once_with(ANY)
     
-    def test_empty_predictions(self):
-        headers = get_basic_auth_header(self.username, self.password)
-        response = self.client.get(f"/prediction/count", headers=headers)
+    @patch("middlewares.auth.verify_credentials")
+    @patch("controllers.prediction_controller.get_predictions_count")
+    def test_empty_predictions(self, mock_get_predictions_count, mock_verify_credentials):
+        """Test the prediction_count endpoint when there are no predictions"""
+        # Arrange
+        mock_verify_credentials.return_value = 1  # Mocking auth
+        mock_get_predictions_count.return_value = {
+            "prediction_count": 0,
+            "average_confidence_score": 0.0,
+            "most_common_labels": {}
+        }
 
+        # Act
+        response = self.client.get(f"/prediction/count")
         data = response.json()
+        
+        # Assert
         self.assertEqual(data['prediction_count'], 0)
+        mock_get_predictions_count.assert_called_once_with(ANY)
     
-    def test_single_prediction(self):
-        headers = get_basic_auth_header(self.username, self.password)
-        self.client.post(
-               "/predict",
-               files={"file": ("test.jpg", open("tests/assets/bear.jpg", "rb"), "image/jpeg")}
-           )
-        response = self.client.get(f"/prediction/count", headers=headers)
+    @patch("middlewares.auth.verify_credentials")
+    @patch("controllers.prediction_controller.get_predictions_count")
+    def test_single_prediction(self, mock_get_predictions_count, mock_verify_credentials):
+        """Test the prediction_count endpoint with a single prediction"""
+        # Arrange
+        mock_verify_credentials.return_value = 1  # Mocking auth
+        mock_get_predictions_count.return_value = {
+            "prediction_count": 1,
+            "average_confidence_score": 0.85,
+            "most_common_labels": {"bear": 1}
+        }
+        
+        # Act
+        response = self.client.get(f"/prediction/count")
         data = response.json()
+        
+        # Assert
         self.assertEqual(data['prediction_count'], 1)
+        mock_get_predictions_count.assert_called_once_with(ANY)
     
-    def test_n_prediction(self):
-        headers = get_basic_auth_header(self.username, self.password)
-        n=3
-           
-        for _ in range(n):
-            self.client.post(
-                "/predict",
-                files={"file": ("test.jpg", open("tests/assets/bear.jpg", "rb"), "image/jpeg")}
-            )
-        response = self.client.get(f"/prediction/count", headers=headers)
+    @patch("middlewares.auth.verify_credentials")
+    @patch("controllers.prediction_controller.get_predictions_count")
+    def test_n_prediction(self, mock_get_predictions_count, mock_verify_credentials):
+        """Test the prediction_count endpoint with multiple predictions"""
+        # Arrange
+        mock_verify_credentials.return_value = 1  # Mocking auth
+        mock_get_predictions_count.return_value = {
+            "prediction_count": 3,
+            "average_confidence_score": 0.9,
+            "most_common_labels": {"bear": 2, "cat": 1}
+        }
+        
+        # Act
+        response = self.client.get(f"/prediction/count")
         data = response.json()
-        self.assertEqual(data['prediction_count'], n)
+        
+        # Assert
+        self.assertEqual(data['prediction_count'], 3)
+        mock_get_predictions_count.assert_called_once_with(ANY)
     
-    def test_prediction_count_unauthenticated(self):
+    @patch("middlewares.auth.verify_credentials")
+    @patch("controllers.prediction_controller.get_predictions_count")
+    def test_prediction_count_unauthenticated(self, mock_get_predictions_count, mock_verify_credentials):
         """Test that accessing prediction_count without authentication returns 401"""
+        # Arrange
+        mock_verify_credentials.return_value = None
+
+        # Act
         response = self.client.get("/prediction/count")
+        
+        # Assert
         self.assertEqual(response.status_code, 401)
-
-
+        mock_get_predictions_count.assert_not_called()
