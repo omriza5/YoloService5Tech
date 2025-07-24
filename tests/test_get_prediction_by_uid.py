@@ -1,64 +1,73 @@
 import unittest
+from unittest.mock import patch, Mock, ANY
 from fastapi.testclient import TestClient
-from .services.auth import get_basic_auth_header
 from app import app
 from db.utils import init_db
+from .services.fake_entities import FakePrediction
 
 client = TestClient(app)
 
 class TestGetPredictionByUidEndpoint(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
-        init_db()
+        def override_init_db():
+            return Mock()
         
-        self.username = "testuser"
-        self.password = "testpass"
-        self.client.post("/users", json={"username": self.username, "password": self.password})
+        app.dependency_overrides[init_db] = override_init_db
 
 
-        
-    def test_get_prediction_by_uid(self):
+    def tearDown(self):
+        # Clean up dependency overrides after each test
+        app.dependency_overrides = {}   
+     
+    @patch("middlewares.auth.verify_credentials")
+    @patch("controllers.prediction_controller.prediction_by_uid")   
+    def test_get_prediction_by_uid(self,mock_query,mock_verify_credentials):
         # Arrange
-        headers = get_basic_auth_header(self.username, self.password)
-        response = self.client.post(
-            "/predict",
-            files={"file": ("test.jpg", open("tests/assets/bear.jpg", "rb"), "image/jpeg")},
+        mock_query.return_value = FakePrediction(
+            uid="123",
+            timestamp="2023-01-01T12:00:00",
+            original_image="input.png",
+            predicted_image="output.png"
         )
-        prediction = response.json()
-        uid = prediction['prediction_uid']
+        mock_verify_credentials.return_value = 1
         
         # Act
-        prediction_response = self.client.get(f"/prediction/{uid}", headers=headers)
+        prediction_response = self.client.get(f"/prediction/123")
 
         # Assert
         self.assertEqual(prediction_response.status_code, 200)
-        self.assertIn('uid', prediction_response.json())
-        self.assertEqual(prediction_response.json()['uid'], uid)
+        self.assertEqual(prediction_response.json(), {
+            "uid": "123",
+            "timestamp": "2023-01-01T12:00:00",
+            "original_image": "input.png",
+            "predicted_image": "output.png"
+        })
+        
+        mock_query.assert_called()
+        mock_query.assert_called_with("123", ANY)
     
-    
-    def test_get_prediction_by_uid_unauthorized(self):
+    @patch("middlewares.auth.verify_credentials")
+    def test_get_prediction_by_uid_unauthorized(self, mock_verify_credentials):
         # Arrange
-        response = self.client.post(
-            "/predict",
-            files={"file": ("test.jpg", open("tests/assets/bear.jpg", "rb"), "image/jpeg")},
-        )
-        prediction = response.json()
-        uid = prediction['prediction_uid']
+        mock_verify_credentials.return_value = None  # Simulate unauthorized access
         
         # Act
-        prediction_response = self.client.get(f"/prediction/{uid}")
+        prediction_response = self.client.get(f"/prediction/123")
 
         # Assert
         self.assertEqual(prediction_response.status_code, 401)
         self.assertIn("detail", prediction_response.json())
     
-    def test_get_prediction_by_non_existent_uid(self):
+    @patch("middlewares.auth.verify_credentials")
+    @patch("controllers.prediction_controller.prediction_by_uid")
+    def test_get_prediction_by_non_existent_uid(self, mock_query, mock_verify_credentials):
         # Arrange
-        uid = "non-existent-uid"
-        headers = get_basic_auth_header(self.username, self.password)
-        
+        mock_query.return_value = None  # Simulate non-existent prediction
+        mock_verify_credentials.return_value = 1
+
         # Act
-        prediction_response = self.client.get(f"/prediction/{uid}", headers=headers)
+        prediction_response = self.client.get(f"/prediction/123")
 
         # Assert
         self.assertEqual(prediction_response.status_code, 404)
