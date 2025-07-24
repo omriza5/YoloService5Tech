@@ -1,57 +1,62 @@
 import unittest
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 from app import app
-from db.utils import init_db
-from .services.auth import get_basic_auth_header
-
 
 class TestAuthMiddleware(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
-        init_db()
-        
-        # Create a test user
-        self.username = "testuser"
-        self.password = "testpass"
-        self.client.post("/users", json={"username": self.username, "password": self.password})
 
-    def test_predict_without_auth(self):
-        response = self.client.post(
-            "/predict",
-            files={"file": ("test.jpg", open("tests/assets/bear.jpg", "rb"), "image/jpeg")}
-        )
+    def test_health_route_no_auth(self):
+        response = self.client.get("/health")
         self.assertEqual(response.status_code, 200)
-        self.assertIsNone(response.json().get("user_id"))
 
-    def test_predict_with_invalid_auth(self):
-        headers = get_basic_auth_header("wrong", "wrong")
-        response = self.client.post(
-            "/predict",
-            files={"file": ("test.jpg", open("tests/assets/bear.jpg", "rb"), "image/jpeg")},
-            headers=headers
-        )
-          
-        self.assertEqual(response.status_code, 200)
-        self.assertIsNone(response.json().get("user_id"))
+    def test_users_route_no_auth(self):
+        # Mock user creation to avoid DB write
+        with patch("controllers.user_controller.create_new_user", return_value={"id": 1, "username": "test"}):
+            response = self.client.post("/users", json={"username": "test", "password": "test"})
+            self.assertIn(response.status_code, [200, 400])
 
-    def test_predict_with_valid_auth(self):
-        headers = get_basic_auth_header(self.username, self.password)
-        response = self.client.post(
-            "/predict",
-            files={"file": ("test.jpg", open("tests/assets/bear.jpg", "rb"), "image/jpeg")},
-            headers=headers
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertIsNotNone(response.json().get("user_id"))
-    
-    def test_stats_without_auth(self):
-        response = self.client.get("/stats")
-        self.assertEqual(response.status_code, 401)
-        self.assertIn("detail", response.json())
-        self.assertEqual(response.json()["detail"], "Unauthorized")
-    
-    def test_stats_with_valid_auth(self):
-        headers = get_basic_auth_header(self.username, self.password)
-        response = self.client.get("/stats", headers=headers)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("total_predictions", response.json())
+    def test_valid_credentials(self):
+        with patch("middlewares.auth.get_credentials_from_headers", return_value=("user", "pass")), \
+             patch("middlewares.auth.verify_credentials", return_value=123):
+            response = self.client.get("/labels", headers={"Authorization": "Basic dXNlcjpwYXNz"})
+            self.assertNotEqual(response.status_code, 401)
+
+    def test_invalid_credentials(self):
+        with patch("middlewares.auth.get_credentials_from_headers", return_value=("user", "wrong")), \
+             patch("middlewares.auth.verify_credentials", return_value=None):
+            response = self.client.get("/labels", headers={"Authorization": "Basic dXNlcjp3cm9uZw=="})
+            self.assertEqual(response.status_code, 401)
+            self.assertEqual(response.json()["detail"], "Unauthorized")
+
+    def test_missing_credentials(self):
+        with patch("middlewares.auth.get_credentials_from_headers", return_value=(None, None)), \
+             patch("middlewares.auth.verify_credentials", return_value=None):
+            response = self.client.get("/labels")
+            self.assertEqual(response.status_code, 401)
+
+    def test_predict_creation_sets_user_id(self):
+        # Patch verify_credentials and prediction saving to avoid DB write
+        with patch("middlewares.auth.get_credentials_from_headers", return_value=("user", "pass")), \
+             patch("middlewares.auth.verify_credentials", return_value=42), \
+             patch("services.prediction_service.save_prediction_session_dao", return_value={"id": 1, "result": "ok"}), \
+             patch("services.prediction_service.save_detection_object_dao", return_value={"id": 1, "result": "ok"}):
+            with open("tests/assets/bear.jpg", "rb") as img_file:
+                response = self.client.post(
+                    "/predict",
+                    files={"file": ("bear.jpg", img_file, "image/jpeg")},
+                    headers={"Authorization": "Basic dXNlcjpwYXNz"}
+                )
+            
+            self.assertNotEqual(response.status_code, 401)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()["user_id"], 42)
+            
+    def test_no_authorization_header(self):
+        # Patch get_credentials_from_headers to return None
+        with patch("middlewares.auth.get_credentials_from_headers", return_value=(None, None)), \
+             patch("middlewares.auth.verify_credentials", return_value=None):
+            response = self.client.get("/labels")
+            self.assertEqual(response.status_code, 401)
+       

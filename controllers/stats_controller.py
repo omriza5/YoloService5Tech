@@ -5,7 +5,6 @@ from services.stats_service import get_stats_data
 
 router = APIRouter()
 
-# [ ] - undestand the queries in stats_service.py
 @router.get("/stats")
 def stats_endpoint(db: Session = Depends(get_db)):
     """
