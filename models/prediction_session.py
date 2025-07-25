@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey
+from sqlalchemy import Column, String, DateTime, ForeignKey, Integer
 from datetime import datetime
 # All models inherit from this base class
 from db.setup_db import Base
@@ -12,7 +12,7 @@ class PredictionSession(Base):
     __tablename__ = 'prediction_sessions'
     
     uid = Column(String, primary_key=True)
-    user_id = Column(String, ForeignKey('users.id'), nullable=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
     original_image = Column(String)
     predicted_image = Column(String)

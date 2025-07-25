@@ -1,4 +1,4 @@
-from models.predection_session import PredictionSession
+from models.prediction_session import PredictionSession
 from models.detection_object import DetectionObject
 
 def save_prediction_session_dao(db,uid, original_image, predicted_image, user_id):
