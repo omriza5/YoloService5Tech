@@ -18,6 +18,9 @@ from db.dao.detections import save_detection_object_dao, get_detection_objects_b
 UPLOAD_DIR = "uploads/original"
 PREDICTED_DIR = "uploads/predicted"
 
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(PREDICTED_DIR, exist_ok=True)
+
 def create_prediction(file, request, db):
     start_time = time.time()
     ext = os.path.splitext(file.filename)[1]
