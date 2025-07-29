@@ -20,12 +20,6 @@ init_db()
 # Import middleware to ensure registration
 import middlewares.auth
 
-UPLOAD_DIR = "uploads/original"
-PREDICTED_DIR = "uploads/predicted"
-
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-os.makedirs(PREDICTED_DIR, exist_ok=True)
-
 # app routes
 app.include_router(health_router)
 app.include_router(prediction_router)
