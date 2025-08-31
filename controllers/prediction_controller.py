@@ -14,12 +14,12 @@ from services.prediction_service import (
 router = APIRouter()
 
 @router.post("/predict")
-def predict(file: UploadFile = File(...), request: Request = None, db: Session = Depends(get_db)):
+def predict(chat_id: str,img_name: str, request: Request = None, db: Session = Depends(get_db)):
     """
     Predict objects in an image
     """
-    try:
-       prediction = create_prediction(file, request, db)
+    try:    
+       prediction = create_prediction(chat_id,img_name, request, db)
        return prediction
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
