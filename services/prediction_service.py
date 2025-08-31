@@ -14,6 +14,7 @@ from db.dao.predictions import (save_prediction_session_dao,
                                 get_all_predictions_by_label_dao,
                                 get_all_predictions_by_score_dao)
 from db.dao.detections import save_detection_object_dao, get_detection_objects_by_prediction_uid_dao
+import boto3
 
 UPLOAD_DIR = "uploads/original"
 PREDICTED_DIR = "uploads/predicted"
@@ -21,43 +22,56 @@ PREDICTED_DIR = "uploads/predicted"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PREDICTED_DIR, exist_ok=True)
 
-def create_prediction(file, request, db):
+def create_prediction(chat_id,image_name, request, db):
     start_time = time.time()
-    ext = os.path.splitext(file.filename)[1]
+    s3 = boto3.client("s3")
+    bucket = "omri-zaher-yolo"
+    
+    original_s3_key = f"{chat_id}/original/{image_name}"
+    ext = os.path.splitext(image_name)[1]
+    
+    original_path = os.path.join(UPLOAD_DIR, chat_id + image_name + ext)
+    predicted_path = os.path.join(PREDICTED_DIR, chat_id + image_name + ext)
     uid = str(uuid.uuid4())
-    original_path = os.path.join(UPLOAD_DIR, uid + ext)
-    predicted_path = os.path.join(PREDICTED_DIR, uid + ext)
+    
+    try:
+        s3.download_file(bucket, original_s3_key, original_path)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Image not found in S3: {e}")
+    
+    # Run YOLO prediction
+    results = model(original_path, device="cpu")
+    annotated_frame = results[0].plot()  # NumPy image with boxes
+    annotated_image = Image.fromarray(annotated_frame)
+    annotated_image.save(predicted_path)
 
-    with open(original_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+    # Upload the predicted image to S3
+    predicted_s3_key = f"{chat_id}/predicted/{image_name}"
+    s3.upload_file(predicted_path, bucket, predicted_s3_key)
 
-        results = model(original_path, device="cpu")
-        annotated_frame = results[0].plot()  # NumPy image with boxes
-        annotated_image = Image.fromarray(annotated_frame)
-        annotated_image.save(predicted_path)
+    # Save prediction session in DB
+    user_id = getattr(request.state, "user_id", None)
+    save_prediction_session_dao(db, uid, original_path, predicted_path, user_id)
 
-        # It could be NULL if no user is logged in
-        user_id = request.state.user_id 
-        save_prediction_session_dao(db,uid, original_path, predicted_path, user_id)
+    detected_labels = []
+    for box in results[0].boxes:
+        label_idx = int(box.cls[0].item())
+        label = model.names[label_idx]
+        score = float(box.conf[0])
+        bbox = box.xyxy[0].tolist()
+        save_detection_object_dao(db, uid, label, score, bbox)
+        detected_labels.append(label)
 
-        detected_labels = []
-        for box in results[0].boxes:
-            label_idx = int(box.cls[0].item())
-            label = model.names[label_idx]
-            score = float(box.conf[0])
-            bbox = box.xyxy[0].tolist()
-            save_detection_object_dao(db,uid, label, score, bbox)
-            detected_labels.append(label)
+    processing_time = round(time.time() - start_time, 2)
 
-        processing_time = round(time.time() - start_time, 2)
-
-        return {
-            "prediction_uid": uid,
-            "detection_count": len(results[0].boxes),
-            "labels": detected_labels,
-            "time_took": processing_time,
-            "user_id": user_id,
-        }
+    return {
+        "prediction_uid": uid,
+        "detection_count": len(results[0].boxes),
+        "labels": detected_labels,
+        "time_took": processing_time,
+        "user_id": user_id,
+        "predicted_s3_key": predicted_s3_key,
+    }
 
 
 

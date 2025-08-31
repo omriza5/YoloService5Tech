@@ -1,3 +1,4 @@
+boto3
 # FastAPI and Uvicorn (for web API)
 fastapi>=0.95.0
 uvicorn>=0.21.1
