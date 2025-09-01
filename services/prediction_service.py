@@ -25,19 +25,13 @@ os.makedirs(PREDICTED_DIR, exist_ok=True)
 def create_prediction(chat_id,image_name, request, db):
     start_time = time.time()
     s3 = boto3.client("s3")
-    bucket = "omri-zaher-yolo"
     
     original_s3_key = f"{chat_id}/original/{image_name}"
-    ext = os.path.splitext(image_name)[1]
-    
-    original_path = os.path.join(UPLOAD_DIR, chat_id + image_name + ext)
-    predicted_path = os.path.join(PREDICTED_DIR, chat_id + image_name + ext)
+    original_path = os.path.join(UPLOAD_DIR, chat_id + '-' + image_name ) # keeping original image for caching purpose
+    predicted_path = os.path.join(PREDICTED_DIR, chat_id + '-' + image_name) # keeping predicted image for caching purpose
     uid = str(uuid.uuid4())
     
-    try:
-        s3.download_file(bucket, original_s3_key, original_path)
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Image not found in S3: {e}")
+    download_from_s3(s3, original_s3_key, original_path)
     
     # Run YOLO prediction
     results = model(original_path, device="cpu")
@@ -47,7 +41,7 @@ def create_prediction(chat_id,image_name, request, db):
 
     # Upload the predicted image to S3
     predicted_s3_key = f"{chat_id}/predicted/{image_name}"
-    s3.upload_file(predicted_path, bucket, predicted_s3_key)
+    upload_to_s3(s3, predicted_s3_key, predicted_path)
 
     # Save prediction session in DB
     user_id = getattr(request.state, "user_id", None)
@@ -190,4 +184,23 @@ def get_prediction_image_by_uid(uid, request, db):
         raise HTTPException(
             status_code=406, detail="Client does not accept an image format"
         )
-        
+
+def download_from_s3(s3_client, s3_key, path):
+    """
+    Download a file from S3
+    """
+    bucket = "omri-zaher-yolo"
+    try:
+        s3_client.download_file(bucket, s3_key, path)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Resource not found in S3: {e}")
+
+def upload_to_s3(s3_client, s3_key, path):
+    """
+    Upload a file to S3
+    """
+    bucket = "omri-zaher-yolo"
+    try:
+        s3_client.upload_file(path, bucket, s3_key)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Error while uploading to S3: {e}")
