@@ -27,8 +27,7 @@ class TestProcessingTime(unittest.TestCase):
             "time_took": 123.456  # Mocked processing time
         }
         response = self.client.post(
-            "/predict",
-            files={"file": ("test_image.jpg", io.BytesIO(b"fake image data"), "image/jpeg")}
+            "/predict?img_name=bear.jpg&chat_id=79f3d334-e294-4d9e-8a29-f6fa7c558877",
         )
         # Check response
         self.assertEqual(response.status_code, 200)
@@ -39,7 +38,8 @@ class TestProcessingTime(unittest.TestCase):
         self.assertIsInstance(data["time_took"], (int, float))
         self.assertGreater(data["time_took"], 0)
         mock_create_prediction.assert_called_once_with(
-            ANY,  # The file object
+            ANY,  # The chat_id string
+            ANY,  # The img_name string
             ANY,  # The request object
             ANY   # The database session
         )
@@ -53,8 +53,7 @@ class TestProcessingTime(unittest.TestCase):
         # Act
         # Send invalid file (not an image)
         response = self.client.post(
-            "/predict",
-            files={"file": ("test.txt", io.BytesIO(b"not an image"), "text/plain")}
+            "/predict?img_name=bear.jpg&chat_id=79f3d334-e294-4d9e-8a29-f6fa7c558877",
         )
         
         # Assert
