@@ -2,7 +2,7 @@
 
 This is a FastAPI-based web service that performs object detection on uploaded images using the YOLOv8 model. The application analyzes images, detects objects, and stores prediction results in a SQLite database for later retrieval.
 
-> **Note:** Database queries are organized using the DAO (Data Access Object) pattern. All database access logic is encapsulated in the `db/dao/` directory for maintainability and separation of concerns.
+> **Note:** Database queries are organized using the DAO (Data Access Object) pattern. All database access logic is encapsulated in the `db/dao/` directory for maintainability and separation of concerns..
 
 ## Setup Instructions
 
